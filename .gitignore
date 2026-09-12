@@ -1,0 +1,37 @@
+# Built artifacts
+build/
+app/build/
+
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IDE - Android Studio
+.idea/
+captures/
+.externalNativeBuild/
+.cxx/
+local.properties
+
+# IDE - IntelliJ
+*.iml
+*.ipr
+*.iws
+
+# IDE - VS Code
+.vscode/
+
+# IDE - Eclipse
+.classpath
+.project
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+*.keystore
+*.jks
+proguard-rules.pro
