@@ -236,7 +236,7 @@ fun EmptyView(message: String = "暂无数据") {
     }
 }
 
-private fun MaterialTextStyle(
+fun MaterialTextStyle(
     fontSize: androidx.compose.ui.unit.TextUnit,
     fontWeight: FontWeight = FontWeight.Normal,
     color: Color = Color.Unspecified

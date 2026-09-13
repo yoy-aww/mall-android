@@ -2,6 +2,7 @@ package com.example.mall_android
 
 import com.example.mall_android.model.*
 import com.google.gson.Gson
+import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
@@ -16,7 +17,7 @@ import java.net.URLEncoder
 
 class ApiClient(val authStore: AuthStore) {
     companion object {
-        const val BASE_URL = "http://10.0.2.2:3456/api"
+        const val BASE_URL = "http://10.0.2.2:3000/api"
         private val JSON = "application/json; charset=utf-8".toMediaType()
         val gson = Gson()
     }
@@ -36,19 +37,16 @@ class ApiClient(val authStore: AuthStore) {
         return try {
             client.newCall(requestBuilder.build()).execute().use { response ->
                 val responseBody = response.body?.string() ?: return Result.failure(Exception("Empty response"))
-                val typeToken = object : TypeToken<Any>() {}.type
-                val wrapperType = TypeToken.getParameterized(
-                    ApiWrapper::class.java, type
-                ).type
-                val wrapper = gson.fromJson(responseBody, wrapperType) as? ApiWrapper
-                if (wrapper?.success == true) {
-                    Result.success(wrapper.data)
-                } else {
-                    Result.failure(Exception(wrapper?.error ?: "HTTP ${response.code}"))
+                val json = JsonParser.parseString(responseBody).asJsonObject
+                if (json.get("success")?.asBoolean != true) {
+                    return Result.failure(Exception(json.get("error")?.asString ?: "HTTP ${response.code}"))
                 }
+                val dataJson = json.get("data")
+                if (dataJson == null || dataJson.isJsonNull) {
+                    return Result.success(null)
+                }
+                Result.success(gson.fromJson(dataJson, type))
             }
-        } catch (e: IOException) {
-            Result.failure(e)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -62,22 +60,20 @@ class ApiClient(val authStore: AuthStore) {
         return try {
             client.newCall(requestBuilder.build()).execute().use { response ->
                 val body = response.body?.string() ?: return Result.failure(Exception("Empty"))
-                val typeToken = TypeToken.getParameterized(
-                    ApiWrapper::class.java,
-                    TypeToken.getParameterized(java.util.ArrayList::class.java, type).type
-                ).type
-                val wrapper = gson.fromJson(body, typeToken) as? ApiWrapper
-                if (wrapper?.success == true) {
-                    val data = wrapper.data as? java.util.List<*>
-                    Result.success((data ?: emptyList()) as List<T>)
-                } else {
-                    Result.failure(Exception(wrapper?.error ?: "Error"))
+                val json = JsonParser.parseString(body).asJsonObject
+                if (json.get("success")?.asBoolean != true) {
+                    return Result.failure(Exception(json.get("error")?.asString ?: "Error"))
                 }
+                val dataJson = json.get("data")
+                if (dataJson == null || dataJson.isJsonNull) {
+                    return Result.success(emptyList())
+                }
+                val listType = TypeToken.getParameterized(java.util.ArrayList::class.java, type).type
+                val list = gson.fromJson<List<T>>(dataJson, listType) ?: emptyList()
+                Result.success(list)
             }
         } catch (e: Exception) { Result.failure(e) }
     }
-
-    private data class ApiWrapper(val success: Boolean, val data: Any?, val error: String?)
 
     // ========== Banners ==========
     fun getBanners(): Result<List<Banner>> = listRequest("/banners", Banner::class.java)
@@ -99,16 +95,18 @@ class ApiClient(val authStore: AuthStore) {
         return try {
             client.newCall(requestBuilder.build()).execute().use { response ->
                 val body = response.body?.string() ?: return Result.failure(Exception("Empty"))
-                val type = TypeToken.getParameterized(ApiWrapper::class.java,
-                    TypeToken.getParameterized(LinkedHashMap::class.java, String::class.java,
-                        TypeToken.getParameterized(java.util.ArrayList::class.java, Product::class.java).type).type).type
-                val wrapper = gson.fromJson(body, type) as? ApiWrapper
-                if (wrapper?.success == true) {
-                    val data = wrapper.data as? Map<String, List<Product>>
-                    Result.success(data ?: emptyMap())
-                } else {
-                    Result.failure(Exception(wrapper?.error ?: "Error"))
+                val json = JsonParser.parseString(body).asJsonObject
+                if (json.get("success")?.asBoolean != true) {
+                    return Result.failure(Exception(json.get("error")?.asString ?: "Error"))
                 }
+                val dataJson = json.get("data")
+                if (dataJson == null || dataJson.isJsonNull) {
+                    return Result.success(emptyMap())
+                }
+                val mapType = TypeToken.getParameterized(LinkedHashMap::class.java, String::class.java,
+                    TypeToken.getParameterized(java.util.ArrayList::class.java, Product::class.java).type).type
+                val map = gson.fromJson<Map<String, List<Product>>>(dataJson, mapType) ?: emptyMap()
+                Result.success(map)
             }
         } catch (e: Exception) { Result.failure(e) }
     }
@@ -259,13 +257,16 @@ class ApiClient(val authStore: AuthStore) {
         return try {
             client.newCall(requestBuilder.build()).execute().use { response ->
                 val body = response.body?.string() ?: return Result.failure(Exception("Empty"))
-                val wrapper = gson.fromJson(body, TypeToken.getParameterized(ApiWrapper::class.java, Map::class.java).type) as? ApiWrapper
-                if (wrapper?.success == true) {
-                    val data = wrapper.data as? Map<String, String>
-                    Result.success(data ?: emptyMap())
-                } else {
-                    Result.failure(Exception(wrapper?.error ?: "Error"))
+                val json = JsonParser.parseString(body).asJsonObject
+                if (json.get("success")?.asBoolean != true) {
+                    return Result.failure(Exception(json.get("error")?.asString ?: "Error"))
                 }
+                val dataJson = json.get("data")
+                if (dataJson == null || dataJson.isJsonNull) {
+                    return Result.success(emptyMap())
+                }
+                val map = gson.fromJson<Map<String, String>>(dataJson, Map::class.java) ?: emptyMap()
+                Result.success(map)
             }
         } catch (e: Exception) { Result.failure(e) }
     }

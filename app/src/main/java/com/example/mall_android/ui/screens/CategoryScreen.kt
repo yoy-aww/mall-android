@@ -23,7 +23,12 @@ fun CategoryScreen(categoryId: String, apiClient: ApiClient, cartManager: CartMa
 
     LaunchedEffect(Unit) {
         loading = true
-        apiClient.getProductsByCategory(categoryId).onSuccess { products = it }
+        if (categoryId == "products") {
+            // "全部商品" — show all products
+            apiClient.getProducts().onSuccess { products = it }
+        } else {
+            apiClient.getProductsByCategory(categoryId).onSuccess { products = it }
+        }
         loading = false
     }
 
