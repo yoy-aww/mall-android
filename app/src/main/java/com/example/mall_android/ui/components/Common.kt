@@ -38,10 +38,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.mall_android.model.Product
+import com.example.mall_android.ui.theme.BrandAccent
 import com.example.mall_android.ui.theme.BrandBackground
 import com.example.mall_android.ui.theme.BrandBorder
+import com.example.mall_android.ui.theme.BrandDiscountBg
 import com.example.mall_android.ui.theme.BrandOriginalPrice
+import com.example.mall_android.ui.theme.BrandPrimary
 import com.example.mall_android.ui.theme.BrandPrice
+import com.example.mall_android.ui.theme.BrandSecondary
 import com.example.mall_android.ui.theme.BrandSurface
 import com.example.mall_android.ui.theme.BrandTag
 import com.example.mall_android.ui.theme.BrandTagBg
@@ -58,10 +62,15 @@ import androidx.compose.ui.text.TextStyle
 
 @Composable
 fun ProductCard(product: Product, onClick: () -> Unit) {
+    val price = product.discountedPrice ?: product.originalPrice
+    val discount = product.discountedPrice?.let {
+        Math.round(price / product.originalPrice * 10)
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(10.dp))
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = BrandSurface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -73,50 +82,70 @@ fun ProductCard(product: Product, onClick: () -> Unit) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(150.dp)
-                    .background(BrandBorder),
+                    .background(BrandSecondary),
                 contentScale = ContentScale.Crop
             )
-            Column(modifier = Modifier.padding(8.dp)) {
-                Text(
-                    text = product.name,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTextStyle(13.sp, FontWeight.Medium, BrandText)
-                )
-                Spacer(Modifier.height(4.dp))
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text(
-                        "¥${String.format("%.2f", product.discountedPrice ?: product.originalPrice)}",
-                        style = MaterialTextStyle(18.sp, FontWeight.Bold, BrandPrice)
-                    )
-                    if (product.discountedPrice != null && product.discountedPrice != product.originalPrice) {
-                        Text(
-                            "¥${String.format("%.2f", product.originalPrice)}",
-                            style = MaterialTextStyle(12.sp, FontWeight.Normal, BrandOriginalPrice).copy(
-                                textDecoration = TextDecoration.LineThrough
-                            ),
-                            modifier = Modifier.padding(start = 6.dp, bottom = 2.dp)
-                        )
-                    }
-                }
+            Column(modifier = Modifier  .padding(12.dp, 14.dp, 14.dp, 14.dp)) {
                 if (product.tags.isNotEmpty()) {
-                    Spacer(Modifier.height(4.dp))
-                    Row {
-                        product.tags.take(2).forEach { tag ->
+                    Row(
+                        modifier = Modifier.padding(bottom = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        product.tags.take(3).forEach { tag ->
                             Surface(
                                 color = BrandTagBg,
-                                shape = RoundedCornerShape(4.dp),
-                                modifier = Modifier.padding(end = 4.dp)
+                                shape = RoundedCornerShape(999.dp)
                             ) {
                                 Text(
                                     tag,
-                                    style = MaterialTextStyle(10.sp, FontWeight.Normal, BrandTag),
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    style = MaterialTextStyle(11.sp, color = BrandPrimary),
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                                 )
                             }
                         }
                     }
                 }
+                Text(
+                    product.name,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTextStyle(14.sp, FontWeight.Medium, BrandText)
+                )
+                Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text("¥", style = MaterialTextStyle(12.sp, FontWeight.Medium, BrandPrice))
+                    Text(
+                        String.format("%.2f", price),
+                        style = MaterialTextStyle(18.sp, FontWeight.Bold, BrandPrice)
+                    )
+                    if (product.discountedPrice != null && product.discountedPrice != product.originalPrice) {
+                        Text(
+                            "¥${String.format("%.2f", product.originalPrice)}",
+                            style = MaterialTextStyle(12.sp, color = BrandTextSecondary).copy(
+                                textDecoration = TextDecoration.LineThrough
+                            ),
+                            modifier = Modifier.padding(start = 6.dp, bottom = 2.dp)
+                        )
+                    }
+                    if (discount != null) {
+                        Surface(
+                            color = BrandDiscountBg,
+                            shape = RoundedCornerShape(4.dp),
+                            modifier = Modifier.padding(start = 6.dp)
+                        ) {
+                            Text(
+                                "${discount}折",
+                                style = MaterialTextStyle(11.sp, color = BrandAccent),
+                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "库存 ${product.stock} 件",
+                    style = MaterialTextStyle(12.sp, color = BrandTextSecondary)
+                )
             }
         }
     }

@@ -12,7 +12,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -47,6 +47,7 @@ import com.example.mall_android.ui.screens.PaymentScreen
 import com.example.mall_android.ui.screens.ProductDetailScreen
 import com.example.mall_android.ui.screens.ProfileEditScreen
 import com.example.mall_android.ui.screens.ProfileScreen
+import com.example.mall_android.ui.screens.ProductListScreen
 import com.example.mall_android.ui.screens.SearchScreen
 import com.example.mall_android.ui.theme.BrandPrimary
 import com.example.mall_android.ui.theme.MallTheme
@@ -89,10 +90,10 @@ fun MallApp(apiClient: ApiClient, authStore: AuthStore, cartManager: CartManager
                     selected = selectedTab == 1,
                     onClick = {
                         selectedTab = 1
-                        navController.navigate("search") { popUpTo(0) { inclusive = true }; launchSingleTop = true }
+                        navController.navigate("products") { popUpTo(0) { inclusive = true }; launchSingleTop = true }
                     },
-                    icon = { Icon(Icons.Filled.Search, null) },
-                    label = { Text("搜索") }
+                    icon = { Icon(Icons.Filled.ShoppingBag, null) },
+                    label = { Text("商品") }
                 )
                 NavigationBarItem(
                     selected = selectedTab == 2,
@@ -142,6 +143,9 @@ fun MallApp(apiClient: ApiClient, authStore: AuthStore, cartManager: CartManager
             }
             composable("search") {
                 SearchScreen(apiClient, navController, cartManager, cartItemCount)
+            }
+            composable("products") {
+                ProductListScreen(apiClient, cartManager, navController, cartItemCount)
             }
             composable("cart") {
                 CartScreen(apiClient, cartManager, navController, cartItemCount)
