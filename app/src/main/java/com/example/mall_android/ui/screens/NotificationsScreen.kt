@@ -19,6 +19,9 @@ import com.example.mall_android.model.*
 import com.example.mall_android.ui.components.*
 import com.example.mall_android.ui.theme.*
 import androidx.navigation.NavController
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 
 @Composable
 fun NotificationsScreen(apiClient: ApiClient, authStore: AuthStore, navController: NavController) {
@@ -71,7 +74,7 @@ fun NotificationsScreen(apiClient: ApiClient, authStore: AuthStore, navControlle
                         ) {
                             Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.Top) {
                                 if (notif.read == 0) {
-                                    Box(modifier = Modifier.size(8.dp).clip(RoundedCornerShape(4.dp)).background(BrandPrimary).padding(end = 8dp))
+                                    Box(modifier = Modifier.size(8.dp).clip(RoundedCornerShape(4.dp)).background(BrandPrimary).padding(end = 8.dp))
                                 }
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(notif.title, style = TextStyle(fontSize = 14.sp, fontWeight = if (notif.read == 0) FontWeight.Bold else FontWeight.Normal))

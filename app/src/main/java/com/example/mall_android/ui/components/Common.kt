@@ -3,25 +3,58 @@ package com.example.mall_android.ui.components
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import coil.request.ImageRequest
-import com.example.mall_android.ui.theme.*
 import com.example.mall_android.model.Product
+import com.example.mall_android.ui.theme.BrandBackground
+import com.example.mall_android.ui.theme.BrandBorder
+import com.example.mall_android.ui.theme.BrandOriginalPrice
+import com.example.mall_android.ui.theme.BrandPrice
+import com.example.mall_android.ui.theme.BrandSurface
+import com.example.mall_android.ui.theme.BrandTag
+import com.example.mall_android.ui.theme.BrandTagBg
+import com.example.mall_android.ui.theme.BrandText
+import com.example.mall_android.ui.theme.BrandTextSecondary
+import com.example.mall_android.ui.theme.StatusCancelled
+import com.example.mall_android.ui.theme.StatusCompleted
+import com.example.mall_android.ui.theme.StatusDelivered
+import com.example.mall_android.ui.theme.StatusPaid
+import com.example.mall_android.ui.theme.StatusPending
+import com.example.mall_android.ui.theme.StatusRefund
+import com.example.mall_android.ui.theme.StatusShipped
+import androidx.compose.ui.text.TextStyle
 
 @Composable
 fun ProductCard(product: Product, onClick: () -> Unit) {
@@ -35,7 +68,7 @@ fun ProductCard(product: Product, onClick: () -> Unit) {
     ) {
         Column {
             AsyncImage(
-                model = ImageRequest.Builder(ioObject = product.image).crossfade(true).build(),
+                model = product.image,
                 contentDescription = product.name,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -48,19 +81,20 @@ fun ProductCard(product: Product, onClick: () -> Unit) {
                     text = product.name,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Medium, color = BrandText),
-                    modifier = Modifier.height(40.dp)
+                    style = MaterialTextStyle(13.sp, FontWeight.Medium, BrandText)
                 )
                 Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
                         "¥${String.format("%.2f", product.discountedPrice ?: product.originalPrice)}",
-                        style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold, color = BrandPrice)
+                        style = MaterialTextStyle(18.sp, FontWeight.Bold, BrandPrice)
                     )
                     if (product.discountedPrice != null && product.discountedPrice != product.originalPrice) {
                         Text(
                             "¥${String.format("%.2f", product.originalPrice)}",
-                            style = TextStyle(fontSize = 12.sp, color = BrandOriginalPrice, textDecoration = androidx.compose.ui.text.style.TextDecoration.LineThrough),
+                            style = MaterialTextStyle(12.sp, FontWeight.Normal, BrandOriginalPrice).copy(
+                                textDecoration = TextDecoration.LineThrough
+                            ),
                             modifier = Modifier.padding(start = 6.dp, bottom = 2.dp)
                         )
                     }
@@ -76,7 +110,7 @@ fun ProductCard(product: Product, onClick: () -> Unit) {
                             ) {
                                 Text(
                                     tag,
-                                    style = TextStyle(fontSize = 10.sp, color = BrandTag),
+                                    style = MaterialTextStyle(10.sp, FontWeight.Normal, BrandTag),
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                 )
                             }
@@ -90,8 +124,8 @@ fun ProductCard(product: Product, onClick: () -> Unit) {
 
 @Composable
 fun ProductGrid(products: List<Product>, onProductClick: (Product) -> Unit) {
-    androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
-        columns = androidx.compose.foundation.lazy.grid.GridCells.Fixed(2),
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2),
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(12.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -106,12 +140,20 @@ fun ProductGrid(products: List<Product>, onProductClick: (Product) -> Unit) {
 @Composable
 fun PriceText(price: Double, originalPrice: Double? = null, size: Float = 16f) {
     Row(verticalAlignment = Alignment.Bottom) {
-        Text("¥", style = TextStyle(fontSize = size - 4, color = BrandPrice, fontWeight = FontWeight.Medium))
-        Text(String.format("%.2f", price), style = TextStyle(fontSize = size, fontWeight = FontWeight.Bold, color = BrandPrice))
+        Text(
+            "¥",
+            style = MaterialTextStyle((size - 4).sp, FontWeight.Medium, BrandPrice)
+        )
+        Text(
+            String.format("%.2f", price),
+            style = MaterialTextStyle(size.sp, FontWeight.Bold, BrandPrice)
+        )
         if (originalPrice != null && originalPrice > price) {
             Text(
                 "¥${String.format("%.2f", originalPrice)}",
-                style = TextStyle(fontSize = size - 4, color = BrandOriginalPrice, textDecoration = androidx.compose.ui.text.style.TextDecoration.LineThrough),
+                style = MaterialTextStyle((size - 4).sp, FontWeight.Normal, BrandOriginalPrice).copy(
+                    textDecoration = TextDecoration.LineThrough
+                ),
                 modifier = Modifier.padding(start = 4.dp, bottom = 1.dp)
             )
         }
@@ -141,8 +183,11 @@ fun StatusChip(status: String) {
         else -> status
     }
     Surface(color = color.copy(alpha = 0.12f), shape = RoundedCornerShape(4.dp)) {
-        Text(label, style = TextStyle(fontSize = 11.sp, color = color, fontWeight = FontWeight.Medium),
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp))
+        Text(
+            label,
+            style = MaterialTextStyle(11.sp, FontWeight.Medium, color),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+        )
     }
 }
 
@@ -155,11 +200,18 @@ fun LoadingView() {
 
 @Composable
 fun ErrorView(message: String, onRetry: (() -> Unit)? = null) {
-    Column(modifier = Modifier.fillMaxSize().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         Spacer(Modifier.height(48.dp))
-        Text("😢", style = TextStyle(fontSize = 48.sp))
+        Text("😢", style = MaterialTextStyle(48.sp, FontWeight.Normal, BrandText))
         Spacer(Modifier.height(16.dp))
-        Text(message, textAlign = TextAlign.Center, style = TextStyle(color = BrandTextSecondary, fontSize = 14.sp))
+        Text(
+            message,
+            textAlign = TextAlign.Center,
+            style = MaterialTextStyle(14.sp, FontWeight.Normal, BrandTextSecondary)
+        )
         if (onRetry != null) {
             Spacer(Modifier.height(16.dp))
             Button(onClick = onRetry) { Text("重试") }
@@ -169,25 +221,30 @@ fun ErrorView(message: String, onRetry: (() -> Unit)? = null) {
 
 @Composable
 fun EmptyView(message: String = "暂无数据") {
-    Column(modifier = Modifier.fillMaxSize().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         Spacer(Modifier.height(48.dp))
-        Text("🛒", style = TextStyle(fontSize = 48.sp))
+        Text("🛒", style = MaterialTextStyle(48.sp, FontWeight.Normal, BrandText))
         Spacer(Modifier.height(16.dp))
-        Text(message, textAlign = TextAlign.Center, style = TextStyle(color = BrandTextSecondary, fontSize = 14.sp))
+        Text(
+            message,
+            textAlign = TextAlign.Center,
+            style = MaterialTextStyle(14.sp, FontWeight.Normal, BrandTextSecondary)
+        )
     }
 }
 
-@Composable
-fun PriceText(price: Double, originalPrice: Double? = null, size: Float = 16f) {
-    Row(verticalAlignment = Alignment.Bottom) {
-        Text("¥", style = TextStyle(fontSize = size - 4, color = BrandPrice, fontWeight = FontWeight.Medium))
-        Text(String.format("%.2f", price), style = TextStyle(fontSize = size, fontWeight = FontWeight.Bold, color = BrandPrice))
-        if (originalPrice != null && originalPrice > price) {
-            Text(
-                "¥${String.format("%.2f", originalPrice)}",
-                style = TextStyle(fontSize = size - 4, color = BrandOriginalPrice, textDecoration = androidx.compose.ui.text.style.TextDecoration.LineThrough),
-                modifier = Modifier.padding(start = 4.dp, bottom = 1.dp)
-            )
-        }
-    }
+private fun MaterialTextStyle(
+    fontSize: androidx.compose.ui.unit.TextUnit,
+    fontWeight: FontWeight = FontWeight.Normal,
+    color: Color = Color.Unspecified
+): TextStyle {
+    val base = TextStyle(
+        fontSize = fontSize,
+        fontWeight = fontWeight,
+        color = color
+    )
+    return base
 }

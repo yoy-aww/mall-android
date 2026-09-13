@@ -27,6 +27,9 @@ import com.example.mall_android.model.*
 import com.example.mall_android.ui.components.*
 import com.example.mall_android.ui.theme.*
 import androidx.navigation.NavController
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.background
 
 @Composable
 fun HomeScreen(apiClient: ApiClient, cartManager: CartManager, navController: NavController, cartItemCount: Int) {
@@ -74,7 +77,7 @@ fun HomeScreen(apiClient: ApiClient, cartManager: CartManager, navController: Na
                             contentAlignment = Alignment.Center
                         ) {
                             AsyncImage(
-                                model = ImageRequest.Builder(ioObject = banner.image).crossfade(true).build(),
+                                model = banner.image,
                                 contentDescription = banner.title,
                                 modifier = Modifier.fillMaxSize().background(BrandBorder),
                                 contentScale = ContentScale.Crop
@@ -117,7 +120,7 @@ fun HomeScreen(apiClient: ApiClient, cartManager: CartManager, navController: Na
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 AsyncImage(
-                                    model = ImageRequest.Builder(ioObject = cat.icon).crossfade(true).build(),
+                                    model = cat.icon,
                                     contentDescription = cat.name,
                                     modifier = Modifier.size(44.dp).clip(RoundedCornerShape(22.dp)).background(BrandSurface),
                                     contentScale = ContentScale.Crop
@@ -141,21 +144,21 @@ fun HomeScreen(apiClient: ApiClient, cartManager: CartManager, navController: Na
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 12.dp, vertical = 4.dp)
-                            .clip(RoundedCornerShape(12dp))
+                            .clip(RoundedCornerShape(12.dp))
                             .clickable { navController.navigate("product/${product.id}") },
                         colors = CardDefaults.cardColors(containerColor = BrandSurface),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
                         Row(modifier = Modifier.height(100.dp)) {
                             AsyncImage(
-                                model = ImageRequest.Builder(ioObject = product.image).crossfade(true).build(),
+                                model = product.image,
                                 contentDescription = product.name,
                                 modifier = Modifier.size(100.dp).background(BrandBorder),
                                 contentScale = ContentScale.Crop
                             )
                             Column(modifier = Modifier.weight(1f).padding(10.dp), verticalArrangement = Arrangement.Center) {
                                 Text(product.name, maxLines = 2, overflow = TextOverflow.Ellipsis, style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Medium, color = BrandText))
-                                Spacer(Modifier.height(4dp))
+                                Spacer(Modifier.height(4.dp))
                                 PriceText(product.discountedPrice ?: product.originalPrice, product.discountedPrice ?: null, 16f)
                                 Spacer(Modifier.height(4.dp))
                                 Text("已售 ${product.stock} 件", style = TextStyle(fontSize = 11.sp, color = BrandTextSecondary))

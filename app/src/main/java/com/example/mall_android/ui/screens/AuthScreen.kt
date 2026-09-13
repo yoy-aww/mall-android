@@ -17,6 +17,8 @@ import com.example.mall_android.model.*
 import com.example.mall_android.ui.components.*
 import com.example.mall_android.ui.theme.*
 import androidx.navigation.NavController
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.graphics.Color
 
 @Composable
 fun AuthScreen(apiClient: ApiClient, authStore: AuthStore, navController: NavController) {

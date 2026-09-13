@@ -25,6 +25,8 @@ import com.example.mall_android.model.*
 import com.example.mall_android.ui.components.*
 import com.example.mall_android.ui.theme.*
 import androidx.navigation.NavController
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
 
 @Composable
 fun CartScreen(apiClient: ApiClient, cartManager: CartManager, navController: NavController, cartItemCount: Int) {
@@ -92,19 +94,19 @@ fun CartScreen(apiClient: ApiClient, cartManager: CartManager, navController: Na
                     ) {
                         Row(modifier = Modifier.height(90.dp)) {
                             AsyncImage(
-                                model = ImageRequest.Builder(ioObject = item.productImage).crossfade(true).build(),
+                                model = item.productImage,
                                 contentDescription = item.productName,
-                                modifier = Modifier.size(90dp).background(BrandBoundary),
+                                modifier = Modifier.size(90.dp).background(BrandBorder),
                                 contentScale = ContentScale.Crop
                             )
                             Column(modifier = Modifier.weight(1f).padding(8.dp), verticalArrangement = Arrangement.Center) {
                                 Text(item.productName, maxLines = 2, overflow = TextOverflow.Ellipsis, style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Medium, color = BrandText))
-                                Spacer(Modifier.height(4dp))
+                                Spacer(Modifier.height(4.dp))
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text("¥", style = TextStyle(fontSize = 12.sp, color = BrandPrice))
                                     Text(String.format("%.2f", item.price), style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold, color = BrandPrice))
                                 }
-                                Spacer(Modifier.height(4dp))
+                                Spacer(Modifier.height(4.dp))
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.Default.Delete, null, tint = BrandTextSecondary, modifier = Modifier.size(14.dp))
                                     TextButton(onClick = { cartManager.removeFromCart(item.productId) }) { Text("删除", fontSize = 11.sp, color = BrandTextSecondary) }

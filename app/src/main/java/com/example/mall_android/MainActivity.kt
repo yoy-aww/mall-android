@@ -3,19 +3,53 @@ package com.example.mall_android
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.icons.Icons as M3Icons
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.example.mall_android.ui.screens.AddressesScreen
+import com.example.mall_android.ui.screens.AddressEditScreen
+import com.example.mall_android.ui.screens.AfterSalesScreen
+import com.example.mall_android.ui.screens.AuthScreen
+import com.example.mall_android.ui.screens.CartScreen
+import com.example.mall_android.ui.screens.CategoryScreen
+import com.example.mall_android.ui.screens.CheckoutScreen
+import com.example.mall_android.ui.screens.HomeScreen
+import com.example.mall_android.ui.screens.NotificationsScreen
+import com.example.mall_android.ui.screens.OrderDetailScreen
+import com.example.mall_android.ui.screens.OrdersScreen
+import com.example.mall_android.ui.screens.PaymentScreen
+import com.example.mall_android.ui.screens.ProductDetailScreen
+import com.example.mall_android.ui.screens.ProfileEditScreen
+import com.example.mall_android.ui.screens.ProfileScreen
+import com.example.mall_android.ui.screens.SearchScreen
+import com.example.mall_android.ui.theme.BrandPrimary
 import com.example.mall_android.ui.theme.MallTheme
-import com.example.mall_android.ui.screens.*
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,7 +82,7 @@ fun MallApp(apiClient: ApiClient, authStore: AuthStore, cartManager: CartManager
                         selectedTab = 0
                         navController.navigate("home") { popUpTo(0) { inclusive = true }; launchSingleTop = true }
                     },
-                    icon = { Icon(Icons.Default.Home, null) },
+                    icon = { Icon(Icons.Filled.Home, null) },
                     label = { Text("首页") }
                 )
                 NavigationBarItem(
@@ -57,7 +91,7 @@ fun MallApp(apiClient: ApiClient, authStore: AuthStore, cartManager: CartManager
                         selectedTab = 1
                         navController.navigate("search") { popUpTo(0) { inclusive = true }; launchSingleTop = true }
                     },
-                    icon = { Icon(Icons.Default.Search, null) },
+                    icon = { Icon(Icons.Filled.Search, null) },
                     label = { Text("搜索") }
                 )
                 NavigationBarItem(
@@ -67,8 +101,21 @@ fun MallApp(apiClient: ApiClient, authStore: AuthStore, cartManager: CartManager
                         navController.navigate("cart") { popUpTo(0) { inclusive = true }; launchSingleTop = true }
                     },
                     icon = {
-                        Badge(count = cartItemCount, containerColor = M3Icons.Default.Red400) {
-                            Icon(Icons.Default.ShoppingCart, null)
+                        Box {
+                            Icon(Icons.Filled.ShoppingCart, null)
+                            if (cartItemCount > 0) {
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .padding(top = 2.dp, end = 4.dp)
+                                        .size(16.dp)
+                                        .clip(CircleShape)
+                                        .background(BrandPrimary),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("$cartItemCount", fontSize = 10.sp, color = Color.White)
+                                }
+                            }
                         }
                     },
                     label = { Text("购物车") }
@@ -79,7 +126,7 @@ fun MallApp(apiClient: ApiClient, authStore: AuthStore, cartManager: CartManager
                         selectedTab = 3
                         navController.navigate("profile") { popUpTo(0) { inclusive = true }; launchSingleTop = true }
                     },
-                    icon = { Icon(Icons.Default.Person, null) },
+                    icon = { Icon(Icons.Filled.Person, null) },
                     label = { Text("我的") }
                 )
             }

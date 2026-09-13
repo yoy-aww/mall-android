@@ -3,19 +3,22 @@ package com.example.mall_android
 import com.example.mall_android.model.*
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
-import java.io.IOException
 import java.io.File
-import java.net.URLDecoder
+import java.io.IOException
 import java.net.URLEncoder
 
 class ApiClient(val authStore: AuthStore) {
     companion object {
         const val BASE_URL = "http://10.0.2.2:3456/api"
         private val JSON = "application/json; charset=utf-8".toMediaType()
-        private val gson = Gson()
+        val gson = Gson()
     }
 
     private val client = OkHttpClient.Builder()
@@ -23,7 +26,7 @@ class ApiClient(val authStore: AuthStore) {
         .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
         .build()
 
-    private inline fun <T> request(path: String, method: String = "GET", body: String? = null): Result<T> {
+    private fun request(path: String, method: String = "GET", body: String? = null, type: Class<*>): Result<Any?> {
         val url = "$BASE_URL$path"
         val requestBuilder = Request.Builder().url(url)
             .method(method, body?.toRequestBody(JSON) ?: null)
@@ -33,10 +36,13 @@ class ApiClient(val authStore: AuthStore) {
         return try {
             client.newCall(requestBuilder.build()).execute().use { response ->
                 val responseBody = response.body?.string() ?: return Result.failure(Exception("Empty response"))
-                val wrapper = gson.fromJson(responseBody, ApiResponse::class.java)
+                val typeToken = object : TypeToken<Any>() {}.type
+                val wrapperType = TypeToken.getParameterized(
+                    ApiWrapper::class.java, type
+                ).type
+                val wrapper = gson.fromJson(responseBody, wrapperType) as? ApiWrapper
                 if (wrapper?.success == true) {
-                    val data = wrapper.data
-                    Result.success(data)
+                    Result.success(wrapper.data)
                 } else {
                     Result.failure(Exception(wrapper?.error ?: "HTTP ${response.code}"))
                 }
@@ -48,9 +54,7 @@ class ApiClient(val authStore: AuthStore) {
         }
     }
 
-    private class ApiResponse<T>(val success: Boolean, val data: T?, val error: String?)
-
-    private inline fun <T> listRequest(path: String): Result<List<T>> {
+    private fun <T> listRequest(path: String, type: Class<T>): Result<List<T>> {
         val url = "$BASE_URL$path"
         val requestBuilder = Request.Builder().url(url).get()
         authStore.token?.let { requestBuilder.header("Authorization", "Bearer $it") }
@@ -58,46 +62,63 @@ class ApiClient(val authStore: AuthStore) {
         return try {
             client.newCall(requestBuilder.build()).execute().use { response ->
                 val body = response.body?.string() ?: return Result.failure(Exception("Empty"))
-                val wrapper = gson.fromJson(body, object : TypeToken<ApiResponse<List<T>>>() {}.type)
-                if (wrapper?.success == true) Result.success(wrapper.data ?: emptyList())
-                else Result.failure(Exception(wrapper?.error ?: "Error"))
+                val typeToken = TypeToken.getParameterized(
+                    ApiWrapper::class.java,
+                    TypeToken.getParameterized(java.util.ArrayList::class.java, type).type
+                ).type
+                val wrapper = gson.fromJson(body, typeToken) as? ApiWrapper
+                if (wrapper?.success == true) {
+                    val data = wrapper.data as? java.util.List<*>
+                    Result.success((data ?: emptyList()) as List<T>)
+                } else {
+                    Result.failure(Exception(wrapper?.error ?: "Error"))
+                }
             }
         } catch (e: Exception) { Result.failure(e) }
     }
 
-    private fun decodeJsonList(json: String?, type: Class<*>): List<Any> {
-        return if (json.isNullOrEmpty()) emptyList()
-        else runCatching { gson.fromJson(json, type) }.getOrDefault(emptyList())
-    }
+    private data class ApiWrapper(val success: Boolean, val data: Any?, val error: String?)
 
     // ========== Banners ==========
-    fun getBanners(): Result<List<Banner>> = listRequest<Banner>("/banners")
+    fun getBanners(): Result<List<Banner>> = listRequest("/banners", Banner::class.java)
 
     // ========== Categories ==========
-    fun getCategories(): Result<List<Category>> = listRequest<Category>("/categories")
+    fun getCategories(): Result<List<Category>> = listRequest("/categories", Category::class.java)
 
     // ========== Products ==========
-    fun getProducts(): Result<List<Product>> = listRequest<Product>("/products")
-    fun getProduct(id: String): Result<Product> = request<Product>("/products/$id")
-    fun getProductsByCategory(categoryId: String): Result<List<Product>> = listRequest<Product>("/products/category/$categoryId")
-    fun getPopular(): Result<List<Product>> = listRequest<Product>("/products/popular")
-    fun searchProducts(query: String): Result<List<Product>> = listRequest<Product>("/products/search?q=${URLEncoder.encode(query, "UTF-8")}")
+    fun getProducts(): Result<List<Product>> = listRequest("/products", Product::class.java)
+    fun getProduct(id: String): Result<Product> = request("/products/$id", type = Product::class.java)
+        .let { r -> r.map { it as? Product ?: Product() } }
+    fun getProductsByCategory(categoryId: String): Result<List<Product>> = listRequest("/products/category/$categoryId", Product::class.java)
+    fun getPopular(): Result<List<Product>> = listRequest("/products/popular", Product::class.java)
+    fun searchProducts(query: String): Result<List<Product>> = listRequest("/products/search?q=${URLEncoder.encode(query, "UTF-8")}", Product::class.java)
+
     fun getGroupedProducts(): Result<Map<String, List<Product>>> {
         val url = "$BASE_URL/products/grouped"
         val requestBuilder = Request.Builder().url(url).get()
         return try {
             client.newCall(requestBuilder.build()).execute().use { response ->
                 val body = response.body?.string() ?: return Result.failure(Exception("Empty"))
-                val wrapper = gson.fromJson(body, object : TypeToken<ApiResponse<Map<String, List<Product>>>>() {}.type)
-                if (wrapper?.success == true) Result.success(wrapper.data ?: emptyMap())
-                else Result.failure(Exception(wrapper?.error ?: "Error"))
+                val type = TypeToken.getParameterized(ApiWrapper::class.java,
+                    TypeToken.getParameterized(LinkedHashMap::class.java, String::class.java,
+                        TypeToken.getParameterized(java.util.ArrayList::class.java, Product::class.java).type).type).type
+                val wrapper = gson.fromJson(body, type) as? ApiWrapper
+                if (wrapper?.success == true) {
+                    val data = wrapper.data as? Map<String, List<Product>>
+                    Result.success(data ?: emptyMap())
+                } else {
+                    Result.failure(Exception(wrapper?.error ?: "Error"))
+                }
             }
         } catch (e: Exception) { Result.failure(e) }
     }
 
     // ========== Auth ==========
-    fun login(username: String, password: String): Result<AuthResponse> =
-        request<AuthResponse>("/auth/login", "POST", gson.toJson(mapOf("username" to username, "password" to password)))
+    fun login(username: String, password: String): Result<AuthResponse> {
+        return request("/auth/login", "POST", gson.toJson(mapOf("username" to username, "password" to password)), AuthResponse::class.java)
+            .let { r -> r.map { it as? AuthResponse ?: AuthResponse("", User()) } }
+    }
+
     fun register(username: String, password: String, nickname: String? = null, phone: String? = null): Result<Map<String, Any>> {
         val body = mutableMapOf<String, String?>(
             "username" to username,
@@ -105,24 +126,33 @@ class ApiClient(val authStore: AuthStore) {
         )
         nickname?.let { body["nickname"] = it }
         phone?.let { body["phone"] = it }
-        return request("/auth/register", "POST", gson.toJson(body))
+        return request("/auth/register", "POST", gson.toJson(body), Map::class.java)
+            .let { r -> r.map { it as? Map<String, Any> ?: emptyMap() } }
     }
-    fun getMe(): Result<User> = request<User>("/auth/me")
+
+    fun getMe(): Result<User> = request("/auth/me", type = User::class.java)
+        .let { r -> r.map { it as? User ?: User() } }
+
     fun updateMe(nickname: String? = null, phone: String? = null): Result<Map<String, Any>> {
         val uid = authStore.user?.id ?: return Result.failure(Exception("Not logged in"))
         val body = mutableMapOf<String, String?>()
         nickname?.let { body["nickname"] = it }
         phone?.let { body["phone"] = it }
-        return request("/auth/users/$uid", "PUT", gson.toJson(body))
+        return request("/auth/users/$uid", "PUT", gson.toJson(body), Map::class.java)
+            .let { r -> r.map { it as? Map<String, Any> ?: emptyMap() } }
     }
-    fun changePassword(oldPassword: String, newPassword: String): Result<Map<String, Any>> =
-        request("/auth/change-password", "POST", gson.toJson(mapOf("oldPassword" to oldPassword, "newPassword" to newPassword)))
+
+    fun changePassword(oldPassword: String, newPassword: String): Result<Map<String, Any>> {
+        return request("/auth/change-password", "POST", gson.toJson(mapOf("oldPassword" to oldPassword, "newPassword" to newPassword)), Map::class.java)
+            .let { r -> r.map { it as? Map<String, Any> ?: emptyMap() } }
+    }
 
     data class AuthResponse(val token: String, val user: User)
 
     // ========== Reviews ==========
-    fun getReviews(productId: String): Result<List<Review>> = listRequest<Review>("/reviews?productId=$productId")
-    fun getReviewStats(productId: String): Result<ReviewStats> = request<ReviewStats>("/reviews/product/$productId/stats")
+    fun getReviews(productId: String): Result<List<Review>> = listRequest("/reviews?productId=$productId", Review::class.java)
+    fun getReviewStats(productId: String): Result<ReviewStats> = request("/reviews/product/$productId/stats", type = ReviewStats::class.java)
+        .let { r -> r.map { it as? ReviewStats ?: ReviewStats() } }
     fun createReview(productId: String, rating: Int, content: String, images: List<String>? = null): Result<Map<String, Any>> {
         val body = mutableMapOf<String, Any>(
             "productId" to productId,
@@ -131,17 +161,28 @@ class ApiClient(val authStore: AuthStore) {
             "content" to content
         )
         images?.let { body["images"] = it }
-        return request("/reviews", "POST", gson.toJson(body))
+        return request("/reviews", "POST", gson.toJson(body), Map::class.java)
+            .let { r -> r.map { it as? Map<String, Any> ?: emptyMap() } }
     }
 
     // ========== Orders ==========
-    fun getMyOrders(): Result<PaginatedList<Order>> {
+    fun getMyOrders(): Result<PaginatedList> {
         val uid = authStore.user?.id ?: ""
-        return request<PaginatedList<Order>>("/orders?userId=$uid")
+        return request("/orders?userId=$uid", type = PaginatedList::class.java)
+            .let { r -> r.map { it as? PaginatedList ?: PaginatedList() } }
     }
-    fun getOrder(id: String): Result<Order> = request<Order>("/orders/$id")
-    fun previewOrder(items: List<CartItem>, shippingMethod: String = "standard"): Result<OrderPreview> =
-        request("/orders/preview", "POST", gson.toJson(mapOf("items" to items.map { mapOf("productId" to it.productId, "quantity" to it.quantity) }, "shippingMethod" to shippingMethod)))
+
+    fun getOrder(id: String): Result<Order> = request("/orders/$id", type = Order::class.java)
+        .let { r -> r.map { it as? Order ?: Order() } }
+
+    fun previewOrder(items: List<CartItem>, shippingMethod: String = "standard"): Result<OrderPreview> {
+        return request("/orders/preview", "POST", gson.toJson(mapOf(
+            "items" to items.map { mapOf("productId" to it.productId, "quantity" to it.quantity) },
+            "shippingMethod" to shippingMethod
+        )), OrderPreview::class.java)
+            .let { r -> r.map { it as? OrderPreview ?: OrderPreview() } }
+    }
+
     fun createOrder(items: List<CartItem>, shippingAddress: String, receiverName: String, receiverPhone: String, remark: String? = null, shippingMethod: String = "standard"): Result<OrderCreateResult> {
         val body = mutableMapOf<String, Any>(
             "items" to items.map { mapOf("productId" to it.productId, "quantity" to it.quantity) },
@@ -151,56 +192,80 @@ class ApiClient(val authStore: AuthStore) {
             "shippingMethod" to shippingMethod
         )
         remark?.let { body["remark"] = it }
-        return request("/orders", "POST", gson.toJson(body))
+        return request("/orders", "POST", gson.toJson(body), OrderCreateResult::class.java)
+            .let { r -> r.map { it as? OrderCreateResult ?: OrderCreateResult() } }
     }
-    fun payOrder(id: String): Result<Order> = request("/orders/$id/payment", "POST", "{}")
-    fun cancelOrder(id: String, reason: String? = null): Result<Order> =
-        request("/orders/$id/cancel", "POST", gson.toJson(mapOf("reason" to (reason ?: ""))))
-    fun confirmDelivery(id: String): Result<Order> = request("/orders/$id/deliver", "POST", "{}")
-    fun confirmOrder(id: String): Result<Order> = request("/orders/$id/confirm", "POST", "{}")
 
-    data class PaginatedList<T>(val list: List<T>, val pagination: Map<String, Any>?)
-    data class OrderCreateResult(val id: String, val subtotal: Double, val shippingFee: Double, val total: Double, val free: Boolean, val shippingMethod: String)
+    fun payOrder(id: String): Result<Order> = request("/orders/$id/payment", "POST", "{}", type = Order::class.java)
+        .let { r -> r.map { it as? Order ?: Order() } }
+    fun cancelOrder(id: String, reason: String? = null): Result<Order> =
+        request("/orders/$id/cancel", "POST", gson.toJson(mapOf("reason" to (reason ?: ""))), type = Order::class.java)
+            .let { r -> r.map { it as? Order ?: Order() } }
+    fun confirmDelivery(id: String): Result<Order> = request("/orders/$id/deliver", "POST", "{}", type = Order::class.java)
+        .let { r -> r.map { it as? Order ?: Order() } }
+    fun confirmOrder(id: String): Result<Order> = request("/orders/$id/confirm", "POST", "{}", type = Order::class.java)
+        .let { r -> r.map { it as? Order ?: Order() } }
+
+    data class PaginatedList(val list: List<Order> = emptyList(), val pagination: Map<String, Any>? = null)
+    data class OrderCreateResult(val id: String = "", val subtotal: Double = 0.0, val shippingFee: Double = 0.0, val total: Double = 0.0, val free: Boolean = false, val shippingMethod: String = "")
 
     // ========== Addresses ==========
-    fun getAddresses(): Result<List<Address>> = listRequest<Address>("/addresses")
+    fun getAddresses(): Result<List<Address>> = listRequest("/addresses", Address::class.java)
     fun createAddress(address: Address): Result<Map<String, Any>> =
-        request("/addresses", "POST", gson.toJson(address))
+        request("/addresses", "POST", gson.toJson(address), Map::class.java)
+            .let { r -> r.map { it as? Map<String, Any> ?: emptyMap() } }
     fun updateAddress(id: String, address: Address): Result<Map<String, Any>> =
-        request("/addresses/$id", "PUT", gson.toJson(address))
+        request("/addresses/$id", "PUT", gson.toJson(address), Map::class.java)
+            .let { r -> r.map { it as? Map<String, Any> ?: emptyMap() } }
     fun deleteAddress(id: String): Result<Map<String, Any>> =
-        request("/addresses/$id", "DELETE", null)
+        request("/addresses/$id", "DELETE", null, Map::class.java)
+            .let { r -> r.map { it as? Map<String, Any> ?: emptyMap() } }
 
     // ========== After-sales ==========
-    fun getAfterSales(): Result<List<AfterSale>> = listRequest<AfterSale>("/aftersales")
+    fun getAfterSales(): Result<List<AfterSale>> = listRequest("/aftersales", AfterSale::class.java)
     fun createAfterSale(orderId: String, items: List<AfterSaleItem>, reason: String, description: String): Result<Map<String, Any>> =
         request("/aftersales", "POST", gson.toJson(mapOf(
             "orderId" to orderId, "items" to items, "reason" to reason, "description" to description
-        )))
+        )), Map::class.java)
+            .let { r -> r.map { it as? Map<String, Any> ?: emptyMap() } }
 
     // ========== Notifications ==========
-    fun getNotifications(): Result<NotificationResponse> = request<NotificationResponse>("/notifications")
-    fun markNotificationRead(id: String): Result<Map<String, Any>> = request("/notifications/$id/read", "PUT", "{}")
-    fun markAllNotificationsRead(): Result<Map<String, Any>> = request("/notifications/all/read", "PUT", "{}")
+    fun getNotifications(): Result<NotificationResponse> {
+        return request("/notifications", type = NotificationResponse::class.java)
+            .let { r -> r.map { it as? NotificationResponse ?: NotificationResponse() } }
+    }
 
-    data class NotificationResponse(val list: List<Notification>, val unread: Int)
+    fun markNotificationRead(id: String): Result<Map<String, Any>> {
+        return request("/notifications/$id/read", "PUT", "{}", Map::class.java)
+            .let { r -> r.map { it as? Map<String, Any> ?: emptyMap() } }
+    }
+
+    fun markAllNotificationsRead(): Result<Map<String, Any>> {
+        return request("/notifications/all/read", "PUT", "{}", Map::class.java)
+            .let { r -> r.map { it as? Map<String, Any> ?: emptyMap() } }
+    }
+
+    data class NotificationResponse(val list: List<Notification> = emptyList(), val unread: Int = 0)
 
     // ========== Upload ==========
     fun uploadImage(file: File): Result<Map<String, String>> {
-        val token = authStore.token
         val requestBody = MultipartBody.Builder().setType(MultipartBody.FORM)
             .addFormDataPart("file", file.name, file.asRequestBody("application/octet-stream".toMediaType()))
             .build()
         val requestBuilder = Request.Builder()
             .url("$BASE_URL/upload")
             .post(requestBody)
-        token?.let { requestBuilder.header("Authorization", "Bearer $it") }
+        authStore.token?.let { requestBuilder.header("Authorization", "Bearer $it") }
         return try {
             client.newCall(requestBuilder.build()).execute().use { response ->
                 val body = response.body?.string() ?: return Result.failure(Exception("Empty"))
-                val wrapper = gson.fromJson(body, object : TypeToken<ApiResponse<Map<String, String>>>() {}.type)
-                if (wrapper?.success == true) Result.success(wrapper.data ?: emptyMap())
-                else Result.failure(Exception(wrapper?.error ?: "Error"))
+                val wrapper = gson.fromJson(body, TypeToken.getParameterized(ApiWrapper::class.java, Map::class.java).type) as? ApiWrapper
+                if (wrapper?.success == true) {
+                    val data = wrapper.data as? Map<String, String>
+                    Result.success(data ?: emptyMap())
+                } else {
+                    Result.failure(Exception(wrapper?.error ?: "Error"))
+                }
             }
         } catch (e: Exception) { Result.failure(e) }
     }

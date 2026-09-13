@@ -16,8 +16,10 @@ class AuthStore(context: Context) {
             val json = prefs.getString("user", null) ?: return null
             return runCatching { gson.fromJson(json, User::class.java) }.getOrNull()
         }
-        set(v) = prefs.edit().apply {
-            if (v == null) remove("user") else putString("user", gson.toJson(v))
+        set(v) {
+            val editor = prefs.edit()
+            if (v == null) editor.remove("user") else editor.putString("user", gson.toJson(v))
+            editor.apply()
         }
 
     fun isLoggedIn() = !token.isNullOrBlank()

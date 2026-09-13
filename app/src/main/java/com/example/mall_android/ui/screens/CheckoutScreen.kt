@@ -12,7 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardOptions
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -21,6 +20,8 @@ import com.example.mall_android.model.*
 import com.example.mall_android.ui.components.*
 import com.example.mall_android.ui.theme.*
 import androidx.navigation.NavController
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.foundation.lazy.LazyColumn
 
 @Composable
 fun CheckoutScreen(addressId: String, apiClient: ApiClient, cartManager: CartManager, authStore: AuthStore, navController: NavController) {
@@ -55,8 +56,10 @@ fun CheckoutScreen(addressId: String, apiClient: ApiClient, cartManager: CartMan
         }
     ) { padding ->
         if (cartItems.isEmpty()) {
-            EmptyView("购物车为空")
-            Button(onClick = { navController.navigateUp() }, modifier = Modifier.align(Alignment.Center).padding(16.dp)) { Text("返回首页") }
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                EmptyView("购物车为空")
+                Button(onClick = { navController.navigateUp() }, modifier = Modifier.padding(16.dp)) { Text("返回首页") }
+            }
         } else {
             LazyColumn(modifier = Modifier.padding(padding).fillMaxSize()) {
                 // Address selection
@@ -64,7 +67,7 @@ fun CheckoutScreen(addressId: String, apiClient: ApiClient, cartManager: CartMan
                     Text("收货地址", style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold), modifier = Modifier.padding(12.dp))
                     if (addresses.isEmpty()) {
                         Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp), colors = CardDefaults.cardColors(containerColor = BrandSurface)) {
-                            Column(modifier = Modifier.padding(16dp)) {
+                            Column(modifier = Modifier.padding(16.dp)) {
                                 Text("暂无收货地址", style = TextStyle(color = BrandTextSecondary))
                                 TextButton(onClick = { navController.navigate("addresses") }) { Text("添加地址", color = BrandPrimary) }
                             }
@@ -139,7 +142,7 @@ fun CheckoutScreen(addressId: String, apiClient: ApiClient, cartManager: CartMan
 
                 // Remark
                 item {
-                    Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 12dp), colors = CardDefaults.cardColors(containerColor = BrandSurface)) {
+                    Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp), colors = CardDefaults.cardColors(containerColor = BrandSurface)) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Text("备注（可选）", style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold))
                             Spacer(Modifier.height(8.dp))

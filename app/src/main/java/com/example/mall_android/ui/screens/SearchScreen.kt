@@ -1,26 +1,42 @@
 package com.example.mall_android.ui.screens
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.example.mall_android.ApiClient
 import com.example.mall_android.CartManager
 import com.example.mall_android.model.Product
-import com.example.mall_android.ui.components.*
-import com.example.mall_android.ui.theme.*
-import androidx.navigation.NavController
+import com.example.mall_android.ui.components.EmptyView
+import com.example.mall_android.ui.components.LoadingView
+import com.example.mall_android.ui.components.ProductGrid
+import com.example.mall_android.ui.theme.BrandSurface
+import com.example.mall_android.ui.theme.BrandText
+import androidx.compose.ui.text.style.TextOverflow
 
 @Composable
 fun SearchScreen(apiClient: ApiClient, navController: NavController, cartManager: CartManager, cartItemCount: Int) {
@@ -29,6 +45,7 @@ fun SearchScreen(apiClient: ApiClient, navController: NavController, cartManager
     var searchResults by remember { mutableStateOf<List<Product>>(emptyList()) }
     var loading by remember { mutableStateOf(false) }
     var hasSearched by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         loading = true
@@ -36,34 +53,38 @@ fun SearchScreen(apiClient: ApiClient, navController: NavController, cartManager
         loading = false
     }
 
+    LaunchedEffect(searchQuery) {
+        if (searchQuery.isNotEmpty()) {
+            hasSearched = true
+            apiClient.searchProducts(searchQuery).onSuccess { results -> searchResults = results }
+        } else {
+            hasSearched = false
+            searchResults = emptyList()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(Icons.Default.ArrowBack, "返回")
+                        Icon(Icons.Filled.ArrowBack, "返回")
                     }
                 },
                 title = {
                     OutlinedTextField(
                         value = query,
-                        onValueChange = {
-                            query = it
-                            if (it.length > 1) {
-                                LaunchedEffect(it) {
-                                    loading = true
-                                    hasSearched = true
-                                    apiClient.searchProducts(it).onSuccess { results -> searchResults = results }
-                                    loading = false
-                                }
+                        onValueChange = { newValue ->
+                            query = newValue
+                            if (newValue.length > 1) {
+                                searchQuery = newValue
                             } else {
-                                hasSearched = false
-                                searchResults = emptyList()
+                                searchQuery = ""
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text("搜索商品...") },
-                        leadingIcon = { Icon(Icons.Default.Search, null) },
+                        leadingIcon = { Icon(Icons.Filled.Search, null) },
                         singleLine = true
                     )
                 },

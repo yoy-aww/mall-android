@@ -108,7 +108,7 @@ data class CartItem(
     val productName: String = "",
     val productImage: String = "",
     val price: Double = 0.0,
-    val quantity: Int = 1
+    var quantity: Int = 1
 )
 
 data class OrderPreview(

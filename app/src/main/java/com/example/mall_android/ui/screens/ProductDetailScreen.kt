@@ -28,6 +28,7 @@ import com.example.mall_android.model.*
 import com.example.mall_android.ui.components.*
 import com.example.mall_android.ui.theme.*
 import androidx.navigation.NavController
+import androidx.compose.ui.text.TextStyle
 
 @Composable
 fun ProductDetailScreen(productId: String, apiClient: ApiClient, cartManager: CartManager, navController: NavController, cartItemCount: Int) {
@@ -69,7 +70,7 @@ fun ProductDetailScreen(productId: String, apiClient: ApiClient, cartManager: Ca
             // Image
             item {
                 AsyncImage(
-                    model = ImageRequest.Builder(ioObject = p.image).crossfade(true).build(),
+                    model = p.image,
                     contentDescription = p.name,
                     modifier = Modifier.fillMaxWidth().height(280.dp).background(BrandBorder),
                     contentScale = ContentScale.Crop
@@ -93,7 +94,7 @@ fun ProductDetailScreen(productId: String, apiClient: ApiClient, cartManager: Ca
                                 }
                             }
                         }
-                        Spacer(Modifier.height(8dp))
+                        Spacer(Modifier.height(8.dp))
                         Row {
                             Text("库存：${p.stock}件", style = TextStyle(fontSize = 13.sp, color = BrandTextSecondary))
                         }
@@ -170,7 +171,7 @@ fun ProductDetailScreen(productId: String, apiClient: ApiClient, cartManager: Ca
                                     }
                                     Spacer(Modifier.height(4.dp))
                                     Text(review.content, style = TextStyle(fontSize = 14.sp, color = BrandText))
-                                    Spacer(Modifier.height(4dp))
+                                    Spacer(Modifier.height(4.dp))
                                     Text(review.createdAt.take(10), style = TextStyle(fontSize = 11.sp, color = BrandTextSecondary))
                                     if (review.reply != null && review.reply!!.isNotEmpty()) {
                                         Spacer(Modifier.height(4.dp))
