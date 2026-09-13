@@ -22,7 +22,7 @@ import androidx.navigation.NavController
 import androidx.compose.ui.text.TextStyle
 
 @Composable
-fun AddressEditScreen(addressId: String, apiClient: ApiClient, navController: NavController) {
+fun AddressEditScreen(addressId: String, apiClient: ApiClient, authStore: AuthStore, navController: NavController) {
     var receiverName by remember { mutableStateOf("") }
     var receiverPhone by remember { mutableStateOf("") }
     var province by remember { mutableStateOf("北京市") }
@@ -33,6 +33,7 @@ fun AddressEditScreen(addressId: String, apiClient: ApiClient, navController: Na
     var loading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf("") }
     val isNew = addressId.isEmpty()
+    val isLoggedIn = authStore.isLoggedIn()
 
     LaunchedEffect(Unit) {
         if (!isNew) {
@@ -58,6 +59,26 @@ fun AddressEditScreen(addressId: String, apiClient: ApiClient, navController: Na
         )
     }) { padding ->
         Column(modifier = Modifier.padding(padding).padding(16.dp).fillMaxSize()) {
+            if (!isLoggedIn) {
+                Surface(
+                    color = Color(0xFFFFF3E0),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text("请先登录后再保存地址", style = TextStyle(fontSize = 13.sp, color = Color(0xFFE65100)))
+                        Spacer(Modifier.height(8.dp))
+                        Button(
+                            onClick = { navController.navigate("auth") },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("去登录", fontSize = 14.sp)
+                        }
+                    }
+                }
+                return@Column
+            }
+
             OutlinedTextField(value = receiverName, onValueChange = { receiverName = it }, label = { Text("收件人") }, leadingIcon = { Icon(Icons.Default.Person, null) }, modifier = Modifier.fillMaxWidth())
             Spacer(Modifier.height(8.dp))
             OutlinedTextField(value = receiverPhone, onValueChange = { receiverPhone = it }, label = { Text("手机号") }, leadingIcon = { Icon(Icons.Default.Phone, null) }, modifier = Modifier.fillMaxWidth())
@@ -85,10 +106,15 @@ fun AddressEditScreen(addressId: String, apiClient: ApiClient, navController: Na
                 if (!isNew) {
                     OutlinedButton(onClick = {
                         apiClient.deleteAddress(addressId).onSuccess { navController.navigateUp() }
+                            .onFailure { error = it.message ?: "删除失败" }
                     }, modifier = Modifier.weight(1f)) { Text("删除") }
                 }
                 Button(onClick = {
                     loading = true; error = ""
+                    if (receiverName.isBlank() || receiverPhone.isBlank() || detailAddress.isBlank()) {
+                        loading = false; error = "请填写收件人、手机号和详细地址"
+                        return@Button
+                    }
                     val addr = Address(
                         id = if (isNew) "" else addressId,
                         userId = "",
@@ -100,8 +126,9 @@ fun AddressEditScreen(addressId: String, apiClient: ApiClient, navController: Na
                         address = detailAddress,
                         isDefault = if (isDefault) 1 else 0
                     )
-                    if (isNew) apiClient.createAddress(addr).onSuccess { loading = false; navController.navigateUp() }.onFailure { loading = false; error = "保存失败" }
-                    else apiClient.updateAddress(addressId, addr).onSuccess { loading = false; navController.navigateUp() }.onFailure { loading = false; error = "保存失败" }
+                    val result = if (isNew) apiClient.createAddress(addr) else apiClient.updateAddress(addressId, addr)
+                    result.onSuccess { loading = false; navController.navigateUp() }
+                        .onFailure { loading = false; error = it.message ?: "保存失败" }
                 }, modifier = Modifier.weight(1f).height(48.dp), enabled = !loading) {
                     if (loading) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)
                     else Text("保存", fontSize = 16.sp)

@@ -2,6 +2,7 @@ package com.example.mall_android.ui.screens
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -87,6 +88,22 @@ fun AuthScreen(apiClient: ApiClient, authStore: AuthStore, navController: NavCon
             Spacer(Modifier.height(12.dp))
             TextButton(onClick = { isLogin = !isLogin }) {
                 Text(if (isLogin) "没有账号？去注册" else "已有账号？去登录", color = BrandPrimary, fontSize = 14.sp)
+            }
+
+            Spacer(Modifier.height(20.dp))
+            Surface(
+                color = Color(0xFFF0F9F4),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text("演示账号", style = TextStyle(fontSize = 12.sp, color = Color(0xFF999999)))
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "管理员：admin / Admin@123\n普通用户：zhangwei / Demo@123",
+                        style = TextStyle(fontSize = 13.sp, color = Color(0xFF333333))
+                    )
+                }
             }
         }
     }
