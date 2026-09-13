@@ -61,15 +61,14 @@ import com.example.mall_android.ui.theme.StatusShipped
 import androidx.compose.ui.text.TextStyle
 
 @Composable
-fun ProductCard(product: Product, onClick: () -> Unit) {
+fun ProductCard(product: Product, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val price = product.discountedPrice ?: product.originalPrice
     val discount = product.discountedPrice?.let {
         Math.round(price / product.originalPrice * 10)
     }
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = modifier
             .clip(RoundedCornerShape(10.dp))
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = BrandSurface),
@@ -81,11 +80,11 @@ fun ProductCard(product: Product, onClick: () -> Unit) {
                 contentDescription = product.name,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(150.dp)
+                    .height(100.dp)
                     .background(BrandSecondary),
                 contentScale = ContentScale.Crop
             )
-            Column(modifier = Modifier  .padding(12.dp, 14.dp, 14.dp, 14.dp)) {
+            Column(modifier = Modifier  .padding(10.dp, 10.dp, 10.dp, 10.dp)) {
                 if (product.tags.isNotEmpty()) {
                     Row(
                         modifier = Modifier.padding(bottom = 8.dp),
@@ -167,7 +166,7 @@ fun ProductGrid(products: List<Product>, onProductClick: (Product) -> Unit) {
 }
 
 @Composable
-fun PriceText(price: Double, originalPrice: Double? = null, size: Float = 16f) {
+fun PriceText(price: Double, originalPrice: Double? = null, size: Double = 16.0) {
     Row(verticalAlignment = Alignment.Bottom) {
         Text(
             "¥",

@@ -147,6 +147,10 @@ fun MallApp(apiClient: ApiClient, authStore: AuthStore, cartManager: CartManager
             composable("products") {
                 ProductListScreen(apiClient, cartManager, navController, cartItemCount)
             }
+            composable("products/{cat}") { backStack ->
+                val cat = backStack.arguments?.getString("cat") ?: ""
+                ProductListScreen(apiClient, cartManager, navController, cartItemCount, initialCat = cat)
+            }
             composable("cart") {
                 CartScreen(apiClient, cartManager, navController, cartItemCount)
             }

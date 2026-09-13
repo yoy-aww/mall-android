@@ -30,30 +30,30 @@ fun ProductListScreen(
     apiClient: ApiClient,
     cartManager: CartManager,
     navController: NavController,
-    cartItemCount: Int
+    cartItemCount: Int,
+    initialCat: String = ""
 ) {
     var products by remember { mutableStateOf<List<Product>>(emptyList()) }
     var categories by remember { mutableStateOf<List<Category>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf("") }
-    var selectedCat by remember { mutableStateOf("") }
+    var selectedCat by remember { mutableStateOf(initialCat) }
 
     LaunchedEffect(Unit) {
         loading = true
         error = ""
         withContext(Dispatchers.IO) {
-            val pr = apiClient.getProducts()
-            pr.onSuccess { products = it }
+            apiClient.getProducts().onSuccess { products = it }
                 .onFailure { error = "加载失败，请稍后重试" }
-            val cr = apiClient.getCategories()
-            cr.onSuccess { categories = it }
+            apiClient.getCategories().onSuccess { categories = it }
                 .onFailure { }
         }
         loading = false
     }
 
     val filtered = remember(products, selectedCat) {
-        if (selectedCat.isEmpty()) products else products.filter { it.categoryId == selectedCat }
+        if (selectedCat.isEmpty()) products
+        else products.filter { it.categoryId == selectedCat }
     }
 
     val curCat = categories.find { it.id == selectedCat }
@@ -66,7 +66,7 @@ fun ProductListScreen(
                 .fillMaxSize()
                 .background(BrandBackground)
         ) {
-            // ===== TopBar (same as HomeScreen) =====
+            // TopBar
             item {
                 AppTopBar(
                     onSearchClick = { navController.navigate("search") },
@@ -74,20 +74,22 @@ fun ProductListScreen(
                     cartItemCount = cartItemCount
                 )
             }
-            // ===== Nav (same as HomeScreen) =====
+            // Nav — all 6 categories + home/profile
             item {
                 AppNavBar(
                     onHome = { navController.navigate("home") { popUpTo(0) { inclusive = true } } },
                     onProducts = { navController.navigate("products") { popUpTo(0) { inclusive = true } } },
-                    onWelfare = { navController.navigate("category/welfare") },
-                    onHerbs = { navController.navigate("category/herbs") },
-                    onHealth = { navController.navigate("category/health") },
-                    onActivity = { navController.navigate("category/activity") },
+                    onWelfare = { navController.navigate("products/welfare") },
+                    onTea = { navController.navigate("products/tea") },
+                    onHerbs = { navController.navigate("products/herbs") },
+                    onHealth = { navController.navigate("products/health") },
+                    onActivity = { navController.navigate("products/activity") },
+                    onSupplements = { navController.navigate("products/supplements") },
                     onProfile = { navController.navigate("profile") }
                 )
             }
 
-            // ===== Page header (matches Web page-head) =====
+            // Page header
             if (!loading) {
                 item {
                     Row(
@@ -109,7 +111,7 @@ fun ProductListScreen(
                 }
             }
 
-            // ===== Filter bar (matches Web filter-bar with chips) =====
+            // Filter bar — horizontal scroll chips
             if (!loading && categories.isNotEmpty()) {
                 item {
                     Row(
@@ -118,7 +120,6 @@ fun ProductListScreen(
                             .padding(horizontal = 16.dp, vertical = 8.dp)
                             .horizontalScroll(rememberScrollState())
                     ) {
-                        // "全部" chip
                         FilterChip(
                             label = "全部",
                             selected = selectedCat.isEmpty(),
@@ -130,14 +131,14 @@ fun ProductListScreen(
                                 label = cat.name,
                                 selected = selectedCat == cat.id,
                                 onClick = { selectedCat = cat.id },
-                                modifier = Modifier  .padding(end = 8.dp)
+                                modifier = Modifier.padding(end = 8.dp)
                             )
                         }
                     }
                 }
             }
 
-            // ===== Loading skeleton =====
+            // Loading
             if (loading) {
                 item {
                     Box(
@@ -149,7 +150,7 @@ fun ProductListScreen(
                 }
             }
 
-            // ===== Error state =====
+            // Error
             if (!loading && error.isNotEmpty()) {
                 item {
                     Column(
@@ -166,7 +167,7 @@ fun ProductListScreen(
                 }
             }
 
-            // ===== Empty state =====
+            // Empty
             if (!loading && error.isEmpty() && filtered.isEmpty()) {
                 item {
                     Column(
@@ -183,23 +184,25 @@ fun ProductListScreen(
                 }
             }
 
-            // ===== Product grid (2 columns, matches Web prod-grid) =====
+            // Product grid — 2 columns, each card gets weight(1f)
             if (!loading && filtered.isNotEmpty()) {
                 item {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
                     ) {
                         filtered.chunked(2).forEach { rowItems ->
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 rowItems.forEach { product ->
-                                    ProductCard(product) {
-                                        navController.navigate("product/${product.id}")
-                                    }
+                                    ProductCard(
+                                        product,
+                                        onClick = { navController.navigate("product/${product.id}") },
+                                        modifier = Modifier.weight(1f)
+                                    )
                                 }
                             }
                         }
@@ -220,7 +223,6 @@ private fun FilterChip(
 ) {
     val bgColor = if (selected) BrandPrimary else BrandSurface
     val textColor = if (selected) Color.White else BrandTextSecondary
-    val borderColor = if (selected) BrandPrimary else BrandBorder
 
     Surface(
         color = bgColor,

@@ -81,7 +81,7 @@ fun ProductDetailScreen(productId: String, apiClient: ApiClient, cartManager: Ca
             item {
                 Card(modifier = Modifier.fillMaxWidth().padding(12.dp), colors = CardDefaults.cardColors(containerColor = BrandSurface), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        PriceText(p.discountedPrice ?: p.originalPrice, if (p.discountedPrice != null) p.originalPrice else null, 24f)
+                        PriceText(p.discountedPrice ?: p.originalPrice, if (p.discountedPrice != null) p.originalPrice else null, 24.0)
                         Spacer(Modifier.height(8.dp))
                         Text(p.name, style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold, color = BrandText), maxLines = 2, overflow = TextOverflow.Ellipsis)
                         if (p.tags.isNotEmpty()) {

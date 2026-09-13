@@ -95,14 +95,20 @@ fun AppTopBar(
     }
 }
 
+/**
+ * Nav bar — shows ALL 6 categories from API + 首页/个人中心.
+ * Matches Web App.tsx nav links to /products?cat=xxx.
+ */
 @Composable
 fun AppNavBar(
     onHome: () -> Unit,
     onProducts: () -> Unit,
     onWelfare: () -> Unit,
+    onTea: () -> Unit,
     onHerbs: () -> Unit,
     onHealth: () -> Unit,
     onActivity: () -> Unit,
+    onSupplements: () -> Unit,
     onProfile: () -> Unit
 ) {
     Row(
@@ -116,9 +122,11 @@ fun AppNavBar(
         NavTabItem("首页", onHome)
         NavTabItem("全部商品", onProducts)
         NavTabItem("惠民专区", onWelfare)
+        NavTabItem("爆款茶饮", onTea)
         NavTabItem("中药材", onHerbs)
         NavTabItem("保健品", onHealth)
         NavTabItem("活动专区", onActivity)
+        NavTabItem("营养补充", onSupplements)
         NavTabItem("个人中心", onProfile)
     }
 }
