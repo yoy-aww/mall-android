@@ -186,6 +186,9 @@ fun MallApp(apiClient: ApiClient, authStore: AuthStore, cartManager: CartManager
             composable("addresses") {
                 AddressesScreen(apiClient, navController)
             }
+            composable("address-edit") {
+                AddressEditScreen("", apiClient, navController)
+            }
             composable("address-edit/{id}") { backStack ->
                 val id = backStack.arguments?.getString("id") ?: ""
                 AddressEditScreen(id, apiClient, navController)
