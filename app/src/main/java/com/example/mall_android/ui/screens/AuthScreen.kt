@@ -100,7 +100,7 @@ fun AuthScreen(apiClient: ApiClient, authStore: AuthStore, navController: NavCon
                     Text("演示账号", style = TextStyle(fontSize = 12.sp, color = Color(0xFF999999)))
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "管理员：admin / Admin@123\n普通用户：zhangwei / Demo@123",
+                        "管理员：admin / 123456\n普通用户：zhangwei / Demo@123",
                         style = TextStyle(fontSize = 13.sp, color = Color(0xFF333333))
                     )
                 }
