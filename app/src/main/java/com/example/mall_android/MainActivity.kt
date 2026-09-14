@@ -159,7 +159,7 @@ fun MallApp(apiClient: ApiClient, authStore: AuthStore, cartManager: CartManager
             }
             composable("product/{id}") { backStack ->
                 val id = backStack.arguments?.getString("id") ?: ""
-                ProductDetailScreen(id, apiClient, cartManager, navController, cartItemCount)
+                ProductDetailScreen(id, apiClient, cartManager, navController, cartItemCount, authStore)
             }
             composable("category/{id}") { backStack ->
                 val id = backStack.arguments?.getString("id") ?: ""
