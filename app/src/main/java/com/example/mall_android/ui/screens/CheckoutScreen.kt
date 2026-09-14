@@ -378,29 +378,6 @@ fun CheckoutScreen(addressId: String, apiClient: ApiClient, cartManager: CartMan
 }
 
 @Composable
-private fun FormField(label: String, value: String, onValueChange: (String) -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-        Text(
-            label,
-            style = MaterialTextStyle(12.sp, color = BrandTextSecondary),
-            modifier = Modifier.width(90.dp).padding(top = 8.dp)
-        )
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            modifier = Modifier.weight(1f),
-            singleLine = true,
-            textStyle = MaterialTextStyle(14.sp),
-            placeholder = { Text("请填写", style = MaterialTextStyle(14.sp, color = Color.Gray)) },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = BrandPrimary,
-                focusedLabelColor = BrandPrimary
-            )
-        )
-    }
-}
-
-@Composable
 private fun ShipMethodRow(method: String, onMethodChange: (String) -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
         ShipOptionRow(selected = method == "standard", label = "标准快递 · ¥8（满 ¥199 免邮）") {
