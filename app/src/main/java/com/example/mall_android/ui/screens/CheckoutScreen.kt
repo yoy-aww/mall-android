@@ -257,6 +257,27 @@ fun CheckoutScreen(addressId: String, apiClient: ApiClient, cartManager: CartMan
                     }
                 }
 
+                // ===== 备注 =====
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = BrandSurface)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text("备注", style = MaterialTextStyle(17.sp, FontWeight.Bold, Color(0xFF333333)))
+                            Spacer(Modifier.height(10.dp))
+                            OutlinedTextField(
+                                value = remark,
+                                onValueChange = { remark = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                placeholder = { Text("选填，如有特殊需求请在此说明") },
+                                maxLines = 3,
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                        }
+                    }
+                }
+
                 // ===== 金额汇总 =====
                 if (preview != null) {
                     item {
