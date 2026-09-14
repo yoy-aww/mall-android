@@ -245,6 +245,54 @@ class ApiClient(val authStore: AuthStore) {
 
     data class NotificationResponse(val list: List<Notification> = emptyList(), val unread: Int = 0)
 
+    // ========== RAG AI 问答 ==========
+    data class RagAnswer(
+        val answer: String = "",
+        val sources: List<RagSource> = emptyList(),
+        val productIds: List<String> = emptyList()
+    )
+
+    data class RagSource(
+        val doc: String = "",
+        val score: Double = 0.0,
+        val text: String = ""
+    )
+
+    fun ragAsk(question: String): Result<RagAnswer> {
+        return request("/rag/ask", "POST",
+            gson.toJson(mapOf("question" to question)),
+            RagAnswer::class.java
+        ).let { r -> r.map { it as? RagAnswer ?: RagAnswer() } }
+    }
+
+    // ========== SSE 通知流 ==========
+    fun sseTicket(): Result<String> {
+        val url = "$BASE_URL/notifications/ticket"
+        val requestBuilder = Request.Builder().url(url)
+            .post("{}".toRequestBody(JSON))
+            .header("Accept", "application/json")
+        authStore.token?.let { requestBuilder.header("Authorization", "Bearer $it") }
+
+        return try {
+            client.newCall(requestBuilder.build()).execute().use { response ->
+                val body = response.body?.string() ?: return Result.failure(Exception("Empty"))
+                val json = JsonParser.parseString(body).asJsonObject
+                if (json.get("success")?.asBoolean != true) {
+                    return Result.failure(Exception(json.get("error")?.asString ?: "Error"))
+                }
+                val dataJson = json.get("data")
+                val ticket = dataJson?.asJsonObject?.get("ticket")?.asString ?: ""
+                Result.success(ticket)
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    fun sseStreamUrl(ticket: String): String {
+        return "$BASE_URL/notifications/stream?ticket=$ticket"
+    }
+
     // ========== Upload ==========
     fun uploadImage(file: File): Result<Map<String, String>> {
         val requestBody = MultipartBody.Builder().setType(MultipartBody.FORM)

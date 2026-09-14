@@ -9,6 +9,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,6 +28,8 @@ import com.example.mall_android.model.*
 import com.example.mall_android.ui.components.*
 import com.example.mall_android.ui.theme.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
@@ -99,78 +102,8 @@ fun HomeScreen(
             // ===== Banner Carousel =====
             if (banners.isNotEmpty()) {
                 item {
-                    Spacer(Modifier.height(8.dp))
-                    HorizontalPager(
-                        state = rememberPagerState { banners.size },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(180.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                    ) { page ->
-                        val banner = banners[page]
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable {
-                                    navigateFromBanner(banner.link, navController)
-                                }
-                        ) {
-                            AsyncImage(
-                                model = banner.image,
-                                contentDescription = banner.title,
-                                modifier = Modifier.fillMaxSize().background(BrandBorder),
-                                contentScale = ContentScale.Crop
-                            )
-                            Box(
-                                modifier = Modifier.fillMaxSize().background(
-                                    Brush.linearGradient(
-                                        colors = listOf(
-                                            Color.Black.copy(alpha = 0.6f),
-                                            Color.Black.copy(alpha = 0.15f),
-                                            Color.Transparent
-                                        )
-                                    )
-                                )
-                            )
-                            Column(
-                                modifier = Modifier
-                                    .align(Alignment.CenterStart)
-                                    .padding(20.dp)
-                                    .fillMaxWidth(0.65f)
-                            ) {
-                                Text(
-                                    banner.title,
-                                    style = MaterialTextStyle(22.sp, FontWeight.Bold, Color.White),
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                if (banner.subtitle.isNotEmpty()) {
-                                    Spacer(Modifier.height(4.dp))
-                                    Text(
-                                        banner.subtitle,
-                                        style = MaterialTextStyle(13.sp, color = Color.White.copy(alpha = 0.85f)),
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                            }
-                            Row(
-                                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                banners.forEachIndexed { i, _ ->
-                                    Box(
-                                        modifier = Modifier
-                                            .size(if (i == page) 8.dp else 6.dp)
-                                            .clip(RoundedCornerShape(if (i == page) 4.dp else 3.dp))
-                                            .background(
-                                                if (i == page) BrandAccent else Color.White.copy(alpha = 0.4f)
-                                            )
-                                    )
-                                }
-                            }
-                        }
+                    BannerCarousel(banners = banners) { link ->
+                        navigateFromBanner(link, navController)
                     }
                     Spacer(Modifier.height(16.dp))
                 }
@@ -317,6 +250,93 @@ private fun SectionHeader(title: String, subtitle: String) {
                 subtitle,
                 style = MaterialTextStyle(12.sp, color = BrandTextSecondary)
             )
+        }
+    }
+}
+
+// ===== Banner Carousel with auto-play =====
+@Composable
+private fun BannerCarousel(banners: List<Banner>, onBannerClick: (String) -> Unit) {
+    val pagerState = rememberPagerState(initialPage = 0) { banners.size }
+
+    // Auto-carousel: switch every 4.5s
+    LaunchedEffect(banners) {
+        while (banners.size > 1) {
+            delay(4500)
+            val next = (pagerState.currentPage + 1) % banners.size
+            pagerState.animateScrollToPage(next)
+        }
+    }
+
+    Spacer(Modifier.height(8.dp))
+    HorizontalPager(
+        state = pagerState,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(180.dp)
+            .clip(RoundedCornerShape(12.dp))
+    ) { page ->
+        val banner = banners[page]
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(RoundedCornerShape(12.dp))
+                .clickable { onBannerClick(banner.link) }
+        ) {
+            AsyncImage(
+                model = banner.image,
+                contentDescription = banner.title,
+                modifier = Modifier.fillMaxSize().background(BrandBorder),
+                contentScale = ContentScale.Crop
+            )
+            Box(
+                modifier = Modifier.fillMaxSize().background(
+                    Brush.linearGradient(
+                        colors = listOf(
+                            Color.Black.copy(alpha = 0.6f),
+                            Color.Black.copy(alpha = 0.15f),
+                            Color.Transparent
+                        )
+                    )
+                )
+            )
+            Column(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .padding(20.dp)
+                    .fillMaxWidth(0.65f)
+            ) {
+                Text(
+                    banner.title,
+                    style = MaterialTextStyle(22.sp, FontWeight.Bold, Color.White),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (banner.subtitle.isNotEmpty()) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        banner.subtitle,
+                        style = MaterialTextStyle(13.sp, color = Color.White.copy(alpha = 0.85f)),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                banners.forEachIndexed { i, _ ->
+                    Box(
+                        modifier = Modifier
+                            .size(if (i == page) 8.dp else 6.dp)
+                            .clip(RoundedCornerShape(if (i == page) 4.dp else 3.dp))
+                            .background(
+                                if (i == page) BrandAccent else Color.White.copy(alpha = 0.4f)
+                            )
+                    )
+                }
+            }
         }
     }
 }

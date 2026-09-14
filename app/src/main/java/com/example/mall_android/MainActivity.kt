@@ -4,7 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -19,19 +21,25 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.MutableIntState
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.mall_android.model.Notification
 import com.example.mall_android.ui.screens.AddressesScreen
 import com.example.mall_android.ui.screens.AddressEditScreen
 import com.example.mall_android.ui.screens.AfterSalesScreen
@@ -48,7 +56,9 @@ import com.example.mall_android.ui.screens.ProductDetailScreen
 import com.example.mall_android.ui.screens.ProfileEditScreen
 import com.example.mall_android.ui.screens.ProfileScreen
 import com.example.mall_android.ui.screens.ProductListScreen
+import com.example.mall_android.ui.screens.RagScreen
 import com.example.mall_android.ui.screens.SearchScreen
+import com.example.mall_android.ui.components.MaterialTextStyle
 import com.example.mall_android.ui.theme.BrandPrimary
 import com.example.mall_android.ui.theme.MallTheme
 
@@ -60,19 +70,40 @@ class MainActivity : ComponentActivity() {
         val apiClient = ApiClient(authStore)
         val cartManager = CartManager.getInstance()
 
+        // Shared unread count state (thread-safe, written by both SSE callback and LaunchedEffect)
+        val unreadCount = mutableIntStateOf(0)
+
+        val notificationManager = NotificationManager(apiClient, { authStore.token }) {
+            apiClient.getNotifications().onSuccess { unreadCount.intValue = it.unread }
+        }
+        notificationManager.start()
+
         setContent {
             MallTheme {
-                MallApp(apiClient = apiClient, authStore = authStore, cartManager = cartManager)
+                MallApp(apiClient = apiClient, authStore = authStore, cartManager = cartManager, unreadCount = unreadCount)
             }
         }
     }
 }
 
 @Composable
-fun MallApp(apiClient: ApiClient, authStore: AuthStore, cartManager: CartManager) {
+fun MallApp(
+    apiClient: ApiClient,
+    authStore: AuthStore,
+    cartManager: CartManager,
+    unreadCount: MutableIntState
+) {
     val navController = rememberNavController()
     var selectedTab by remember { mutableIntStateOf(0) }
     var cartItemCount by remember { mutableIntStateOf(cartManager.totalItems) }
+    var showRag by remember { mutableStateOf(false) }
+
+    // Load unread count on login
+    LaunchedEffect(authStore.token) {
+        if (!authStore.token.isNullOrBlank()) {
+            apiClient.getNotifications().onSuccess { unreadCount.intValue = it.unread }
+        }
+    }
 
     Scaffold(
         bottomBar = {
@@ -133,6 +164,7 @@ fun MallApp(apiClient: ApiClient, authStore: AuthStore, cartManager: CartManager
             }
         }
     ) { padding ->
+        Box(modifier = Modifier.fillMaxSize()) {
         NavHost(
             navController = navController,
             startDestination = "home",
@@ -203,5 +235,32 @@ fun MallApp(apiClient: ApiClient, authStore: AuthStore, cartManager: CartManager
                 ProfileEditScreen(authStore, apiClient, navController)
             }
         }
+
+        // RAG floating button (bottom-right, above bottom bar)
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 20.dp, bottom = 80.dp)
+                .size(52.dp)
+                .clip(CircleShape)
+                .background(BrandPrimary)
+                .shadow(6.dp, CircleShape)
+                .clickable { showRag = true },
+            contentAlignment = Alignment.Center
+        ) {
+            Text("AI", style = MaterialTextStyle(14.sp, FontWeight.Bold, Color.White))
+        }
+
+        // RAG dialog
+        if (showRag) {
+            RagScreen(
+                authStore = authStore,
+                apiClient = apiClient,
+                navController = navController,
+                onClose = { showRag = false }
+            )
+        }
     }
 }
+}
+

@@ -58,6 +58,7 @@ import androidx.navigation.NavController
 import com.example.mall_android.ApiClient
 import com.example.mall_android.AuthStore
 import com.example.mall_android.ui.theme.BrandBackground
+import com.example.mall_android.ui.theme.BrandAccent
 import com.example.mall_android.ui.theme.BrandBorder
 import com.example.mall_android.ui.theme.BrandPrimary
 import com.example.mall_android.ui.theme.BrandSecondary
@@ -115,6 +116,21 @@ fun ProfileScreen(authStore: AuthStore, apiClient: ApiClient, navController: Nav
                                     user.phone,
                                     style = TextStyle(fontSize = 12.sp, color = BrandTextSecondary)
                                 )
+                            }
+                            if (user != null) {
+                                val roleLabel = if (user.role == "admin") "管理员" else "普通会员"
+                                val roleColor = if (user.role == "admin") BrandAccent else BrandPrimary
+                                Surface(
+                                    color = roleColor.copy(alpha = 0.12f),
+                                    shape = RoundedCornerShape(4.dp),
+                                    modifier = Modifier.padding(top = 4.dp)
+                                ) {
+                                    Text(
+                                        roleLabel,
+                                        style = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.Medium, color = roleColor),
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
                             }
                         }
                         TextButton(onClick = { navController.navigate("profile-edit") }) {

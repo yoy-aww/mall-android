@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.runtime.*
@@ -25,7 +26,9 @@ import com.example.mall_android.ui.theme.*
 fun AppTopBar(
     onSearchClick: () -> Unit,
     onCartClick: () -> Unit,
-    cartItemCount: Int
+    cartItemCount: Int,
+    onNotificationClick: () -> Unit = {},
+    unreadCount: Int = 0
 ) {
     Row(
         modifier = Modifier
@@ -65,6 +68,34 @@ fun AppTopBar(
                     style = MaterialTextStyle(14.sp, color = Color.Gray),
                     modifier = Modifier.weight(1f)
                 )
+            }
+        }
+        Spacer(Modifier.width(12.dp))
+        Box(
+            modifier = Modifier.clickable(onClick = onNotificationClick),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                Icons.Filled.Notifications,
+                null,
+                tint = Color.White,
+                modifier = Modifier.size(22.dp)
+            )
+            if (unreadCount > 0) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 0.dp, end = 2.dp)
+                        .clip(CircleShape)
+                        .background(BrandAccent)
+                        .size(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        if (unreadCount > 99) "99+" else "$unreadCount",
+                        style = MaterialTextStyle(9.sp, FontWeight.Bold, Color.White)
+                    )
+                }
             }
         }
         Spacer(Modifier.width(12.dp))
