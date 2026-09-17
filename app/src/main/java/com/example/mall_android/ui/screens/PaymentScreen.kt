@@ -21,15 +21,19 @@ import com.example.mall_android.ui.components.*
 import com.example.mall_android.ui.theme.*
 import androidx.navigation.NavController
 import androidx.compose.ui.text.TextStyle
+import kotlinx.coroutines.*
 
 @Composable
 fun PaymentScreen(orderId: String, apiClient: ApiClient, authStore: AuthStore, navController: NavController) {
+    val scope = rememberCoroutineScope()
     var order by remember { mutableStateOf<Order?>(null) }
     var paid by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf("") }
 
-    LaunchedEffect(Unit) {
-        apiClient.getOrder(orderId).onSuccess { order = it }
+    LaunchedEffect(orderId) {
+        val result = withContext(Dispatchers.IO) { apiClient.getOrder(orderId) }
+        result.onSuccess { order = it }
     }
 
     Scaffold(topBar = {
@@ -73,11 +77,20 @@ fun PaymentScreen(orderId: String, apiClient: ApiClient, authStore: AuthStore, n
                     }
 
                     Spacer(Modifier.height(20.dp))
+                    if (error.isNotEmpty()) {
+                        Text(error, color = Color.Red, fontSize = 13.sp)
+                        Spacer(Modifier.height(8.dp))
+                    }
                     Button(
                         onClick = {
                             loading = true
-                            apiClient.payOrder(orderId).onSuccess { paid = true }
-                            .onFailure { loading = false }
+                            error = ""
+                            val oid = orderId
+                            scope.launch {
+                                val result = withContext(Dispatchers.IO) { apiClient.payOrder(oid) }
+                                result.onSuccess { paid = true }
+                                result.onFailure { loading = false; error = it.message ?: "支付失败" }
+                            }
                         },
                         modifier = Modifier.fillMaxWidth().height(50.dp),
                         enabled = !loading
