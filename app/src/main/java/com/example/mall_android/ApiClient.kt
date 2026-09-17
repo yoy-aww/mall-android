@@ -21,7 +21,7 @@ import java.net.URLEncoder
 
 class ApiClient(val authStore: AuthStore) {
     companion object {
-        const val BASE_URL = "http://10.0.2.2:3000/api"
+        const val BASE_URL = "http://43.153.148.187:3000/api"
         private val JSON = "application/json; charset=utf-8".toMediaType()
         val gson = Gson()
     }
