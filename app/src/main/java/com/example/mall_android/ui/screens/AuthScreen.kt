@@ -20,6 +20,7 @@ import com.example.mall_android.ui.theme.*
 import androidx.navigation.NavController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.graphics.Color
+import kotlinx.coroutines.*
 
 @Composable
 fun AuthScreen(apiClient: ApiClient, authStore: AuthStore, navController: NavController) {
@@ -67,18 +68,37 @@ fun AuthScreen(apiClient: ApiClient, authStore: AuthStore, navController: NavCon
             }
 
             Spacer(Modifier.height(20.dp))
+            val scope = rememberCoroutineScope()
             Button(onClick = {
                 loading = true; error = ""
-                if (isLogin) {
-                    apiClient.login(username, password).onSuccess {
-                        authStore.token = it.token
-                        authStore.user = it.user
-                        navController.navigateUp()
-                    }.onFailure { loading = false; error = it.message ?: "登录失败" }
-                } else {
-                    apiClient.register(username, password, nickname.ifEmpty { null }, phone.ifEmpty { null }).onSuccess {
-                        navController.navigateUp()
-                    }.onFailure { loading = false; error = it.message ?: "注册失败" }
+                val isLoginMode = isLogin
+                val u = username; val p = password
+                val nick = nickname; val ph = phone
+                scope.launch {
+                    try {
+                        if (isLoginMode) {
+                            val result = withContext(Dispatchers.IO) { apiClient.login(u, p) }
+                            val resp = result.getOrNull()
+                            if (resp != null) {
+                                authStore.token = resp.token
+                                authStore.user = resp.user
+                                navController.navigateUp()
+                            } else {
+                                loading = false
+                                error = result.exceptionOrNull()?.message ?: "登录失败"
+                            }
+                        } else {
+                            withContext(Dispatchers.IO) {
+                                apiClient.register(u, p, nick.ifEmpty { null }, ph.ifEmpty { null })
+                            }.fold(
+                                onSuccess = { navController.navigateUp() },
+                                onFailure = { loading = false; error = it.message ?: "注册失败" }
+                            )
+                        }
+                    } catch (e: Exception) {
+                        loading = false
+                        error = e.message ?: (if (isLoginMode) "登录失败" else "注册失败")
+                    }
                 }
             }, modifier = Modifier.fillMaxWidth().height(48.dp), enabled = !loading) {
                 if (loading) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)
@@ -100,7 +120,7 @@ fun AuthScreen(apiClient: ApiClient, authStore: AuthStore, navController: NavCon
                     Text("演示账号", style = TextStyle(fontSize = 12.sp, color = Color(0xFF999999)))
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "管理员：admin / 123456\n普通用户：zhangwei / Demo@123",
+                        "管理员：admin / Admin@123\n普通用户：zhangwei / Demo@123",
                         style = TextStyle(fontSize = 13.sp, color = Color(0xFF333333))
                     )
                 }

@@ -1,5 +1,6 @@
 package com.example.mall_android
 
+import android.util.Log
 import com.example.mall_android.model.*
 import com.google.gson.Gson
 import com.google.gson.JsonParser
@@ -11,6 +12,9 @@ import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Interceptor
+import okhttp3.Response
+import okio.Buffer
 import java.io.File
 import java.io.IOException
 import java.net.URLEncoder
@@ -25,6 +29,13 @@ class ApiClient(val authStore: AuthStore) {
     private val client = OkHttpClient.Builder()
         .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
         .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+        .addInterceptor { chain ->
+            val req = chain.request()
+            Log.d("MallApi", ">> ${req.method} ${req.url}")
+            val resp = chain.proceed(req)
+            Log.d("MallApi", "<< ${resp.code} ${resp.message}")
+            resp
+        }
         .build()
 
     private fun request(path: String, method: String = "GET", body: String? = null, type: Class<*>): Result<Any?> {
