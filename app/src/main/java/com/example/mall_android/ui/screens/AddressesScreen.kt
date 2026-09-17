@@ -22,15 +22,28 @@ import androidx.navigation.NavController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import kotlinx.coroutines.*
+import androidx.navigation.compose.currentBackStackEntryAsState
 
 @Composable
 fun AddressesScreen(apiClient: ApiClient, navController: NavController) {
     var addresses by remember { mutableStateOf<List<Address>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
+    val scope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) {
-        apiClient.getAddresses().onSuccess { addresses = it }
-        loading = false
+    fun loadAddresses() {
+        scope.launch {
+            val result = withContext(Dispatchers.IO) { apiClient.getAddresses() }
+            result.onSuccess { addresses = it }
+            loading = false
+        }
+    }
+
+    // 监听导航栈变化：从编辑页返回时刷新
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    LaunchedEffect(currentRoute) {
+        loadAddresses()
     }
 
     Scaffold(topBar = {

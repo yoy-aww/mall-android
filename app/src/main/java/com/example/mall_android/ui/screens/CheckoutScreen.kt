@@ -43,16 +43,33 @@ fun CheckoutScreen(addressId: String, apiClient: ApiClient, cartManager: CartMan
         addresses.firstOrNull { it.id == selectedAddressId }
     }
 
-    // Load addresses
-    LaunchedEffect(Unit) {
+    // Load addresses (when login state changes)
+    LaunchedEffect(isLoggedIn) {
         if (isLoggedIn) {
-            apiClient.getAddresses().onSuccess { list ->
+            val result = withContext(Dispatchers.IO) { apiClient.getAddresses() }
+            result.onSuccess { list ->
                 addresses = list
                 // Default select: preferred addressId → first default → first item
                 val preferred = list.firstOrNull { it.id == addressId }
                     ?: list.firstOrNull { it.isDefault == 1 }
                     ?: list.firstOrNull()
                 if (preferred != null) selectedAddressId = preferred.id
+            }
+        }
+    }
+
+    // Reload when returning from address edit (nav stack change)
+    LaunchedEffect(navController.currentBackStack.value) {
+        if (isLoggedIn) {
+            val result = withContext(Dispatchers.IO) { apiClient.getAddresses() }
+            result.onSuccess { list ->
+                addresses = list
+                if (selectedAddressId.isEmpty()) {
+                    val preferred = list.firstOrNull { it.id == addressId }
+                        ?: list.firstOrNull { it.isDefault == 1 }
+                        ?: list.firstOrNull()
+                    if (preferred != null) selectedAddressId = preferred.id
+                }
             }
         }
     }

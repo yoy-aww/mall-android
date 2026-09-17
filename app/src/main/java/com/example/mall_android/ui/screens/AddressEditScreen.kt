@@ -20,6 +20,7 @@ import com.example.mall_android.ui.components.*
 import com.example.mall_android.ui.theme.*
 import androidx.navigation.NavController
 import androidx.compose.ui.text.TextStyle
+import kotlinx.coroutines.*
 
 @Composable
 fun AddressEditScreen(addressId: String, apiClient: ApiClient, authStore: AuthStore, navController: NavController) {
@@ -102,11 +103,17 @@ fun AddressEditScreen(addressId: String, apiClient: ApiClient, authStore: AuthSt
             }
 
             Spacer(Modifier.height(16.dp))
+            val scope = rememberCoroutineScope()
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (!isNew) {
                     OutlinedButton(onClick = {
-                        apiClient.deleteAddress(addressId).onSuccess { navController.navigateUp() }
-                            .onFailure { error = it.message ?: "删除失败" }
+                        scope.launch {
+                            val result = withContext(Dispatchers.IO) { apiClient.deleteAddress(addressId) }
+                            result.fold(
+                                onSuccess = { navController.navigateUp() },
+                                onFailure = { error = it.message ?: "删除失败" }
+                            )
+                        }
                     }, modifier = Modifier.weight(1f)) { Text("删除") }
                 }
                 Button(onClick = {
@@ -126,9 +133,15 @@ fun AddressEditScreen(addressId: String, apiClient: ApiClient, authStore: AuthSt
                         address = detailAddress,
                         isDefault = if (isDefault) 1 else 0
                     )
-                    val result = if (isNew) apiClient.createAddress(addr) else apiClient.updateAddress(addressId, addr)
-                    result.onSuccess { loading = false; navController.navigateUp() }
-                        .onFailure { loading = false; error = it.message ?: "保存失败" }
+                    scope.launch {
+                        val result = withContext(Dispatchers.IO) {
+                            if (isNew) apiClient.createAddress(addr) else apiClient.updateAddress(addressId, addr)
+                        }
+                        result.fold(
+                            onSuccess = { loading = false; navController.navigateUp() },
+                            onFailure = { loading = false; error = it.message ?: "保存失败" }
+                        )
+                    }
                 }, modifier = Modifier.weight(1f).height(48.dp), enabled = !loading) {
                     if (loading) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)
                     else Text("保存", fontSize = 16.sp)

@@ -22,9 +22,11 @@ import androidx.navigation.NavController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import kotlinx.coroutines.*
 
 @Composable
 fun NotificationsScreen(apiClient: ApiClient, authStore: AuthStore, navController: NavController) {
+    val scope = rememberCoroutineScope()
     var notifications by remember { mutableStateOf<List<Notification>>(emptyList()) }
     var unread by remember { mutableIntStateOf(0) }
     var loading by remember { mutableStateOf(true) }
@@ -47,9 +49,12 @@ fun NotificationsScreen(apiClient: ApiClient, authStore: AuthStore, navControlle
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
             if (unread > 0) {
                 Button(onClick = {
-                    apiClient.markAllNotificationsRead().onSuccess {
-                        notifications = notifications.map { it.copy(read = 1) }
-                        unread = 0
+                    scope.launch {
+                        val result = withContext(Dispatchers.IO) { apiClient.markAllNotificationsRead() }
+                        if (result.isSuccess) {
+                            notifications = notifications.map { it.copy(read = 1) }
+                            unread = 0
+                        }
                     }
                 }, modifier = Modifier.fillMaxWidth().height(40.dp)) {
                     Text("全部标为已读 (${unread}条未读)")
@@ -65,10 +70,15 @@ fun NotificationsScreen(apiClient: ApiClient, authStore: AuthStore, navControlle
                     items(notifications) { notif ->
                         Card(
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp).clip(RoundedCornerShape(12.dp))
-                                .clickable { apiClient.markNotificationRead(notif.id).onSuccess {
-                                    notifications = notifications.map { if (it.id == notif.id) it.copy(read = 1) else it }
-                                    unread = notifications.count { it.read == 0 }
-                                } },
+                                .clickable {
+                                    scope.launch {
+                                        val result = withContext(Dispatchers.IO) { apiClient.markNotificationRead(notif.id) }
+                                        if (result.isSuccess) {
+                                            notifications = notifications.map { if (it.id == notif.id) it.copy(read = 1) else it }
+                                            unread = notifications.count { it.read == 0 }
+                                        }
+                                    }
+                                },
                             colors = CardDefaults.cardColors(containerColor = if (notif.read == 0) BrandDiscountBg else BrandSurface),
                             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                         ) {
