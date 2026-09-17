@@ -175,9 +175,10 @@ class ApiClient(val authStore: AuthStore) {
     }
 
     // ========== Orders ==========
-    fun getMyOrders(): Result<PaginatedList> {
+    fun getMyOrders(status: String? = null): Result<PaginatedList> {
         val uid = authStore.user?.id ?: ""
-        return request("/orders?userId=$uid", type = PaginatedList::class.java)
+        val query = if (status.isNullOrEmpty()) "/orders?userId=$uid" else "/orders?userId=$uid&status=$status"
+        return request(query, type = PaginatedList::class.java)
             .let { r -> r.map { it as? PaginatedList ?: PaginatedList() } }
     }
 

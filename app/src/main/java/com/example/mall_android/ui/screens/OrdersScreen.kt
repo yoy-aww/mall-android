@@ -23,6 +23,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.FilterChip
+import kotlinx.coroutines.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
@@ -64,9 +65,9 @@ fun OrdersScreen(apiClient: ApiClient, authStore: AuthStore, navController: NavC
 
     LaunchedEffect(filter) {
         loading = true
-        apiClient.getMyOrders()
-            .onSuccess { orders = it.list }
-            .onFailure { orders = emptyList() }
+        val result = withContext(Dispatchers.IO) { apiClient.getMyOrders(filter.ifEmpty { null }) }
+        result.onSuccess { orders = it.list }
+        result.onFailure { orders = emptyList() }
         loading = false
     }
 
