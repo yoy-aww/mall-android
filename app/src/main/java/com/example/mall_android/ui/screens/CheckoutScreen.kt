@@ -83,9 +83,13 @@ fun CheckoutScreen(addressId: String, apiClient: ApiClient, cartManager: CartMan
     }
 
     // Preview order
+    // Preview order (on cart items or shipping method change)
     LaunchedEffect(cartItems, shippingMethod) {
         if (cartItems.isNotEmpty()) {
-            apiClient.previewOrder(cartItems, shippingMethod).onSuccess { preview = it }
+            val result = withContext(Dispatchers.IO) {
+                apiClient.previewOrder(cartItems, shippingMethod)
+            }
+            result.onSuccess { preview = it }
         }
     }
 
